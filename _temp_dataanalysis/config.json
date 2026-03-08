@@ -1,0 +1,33 @@
+{
+  "routes": [
+    {
+      "path": "/",
+      "src": "src/pages/Dashboard.tsx"
+    },
+    {
+      "path": "/data",
+      "src": "src/pages/DataManagement.tsx"
+    },
+    {
+      "path": "/statistics",
+      "src": "src/pages/Statistics.tsx"
+    }
+  ],
+  "components": [
+    {"name": "Layout", "src": "src/components/layout/Layout.tsx"},
+    {"name": "Sidebar", "src": "src/components/layout/Sidebar.tsx"},
+    {"name": "TechCard", "src": "src/components/ui-custom/TechCard.tsx"},
+    {"name": "StatCard", "src": "src/components/dashboard/StatCard.tsx"},
+    {"name": "DistributionChart", "src": "src/components/dashboard/DistributionChart.tsx"},
+    {"name": "DataFilterBar", "src": "src/components/data/DataFilterBar.tsx"},
+    {"name": "PilotStatsTab", "src": "src/components/statistics/PilotStatsTab.tsx"},
+    {"name": "DeviceStatsTab", "src": "src/components/statistics/DeviceStatsTab.tsx"},
+    {"name": "TaskStatsTab", "src": "src/components/statistics/TaskStatsTab.tsx"},
+    {"name": "PilotPerformanceCard", "src": "src/components/statistics/PilotPerformanceCard.tsx"},
+    {"name": "TeamHeatmap", "src": "src/components/statistics/TeamHeatmap.tsx"},
+    {"name": "PerformanceWarning", "src": "src/components/statistics/PerformanceWarning.tsx"},
+    {"name": "DeviceHealthBoard", "src": "src/components/statistics/DeviceHealthBoard.tsx"},
+    {"name": "ResourceHeatmap", "src": "src/components/statistics/ResourceHeatmap.tsx"},
+    {"name": "TaskEfficiencyBoard", "src": "src/components/statistics/TaskEfficiencyBoard.tsx"}
+  ]
+}

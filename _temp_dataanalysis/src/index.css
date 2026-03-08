@@ -1,0 +1,108 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-warning: var(--warning);
+  --color-success: var(--success);
+  --color-border: var(--border);
+  --color-ring: var(--ring);
+  
+  --shadow-tech: var(--shadow-tech);
+}
+
+:root {
+  /* Dark tech theme inspired by reference images */
+  --background: rgb(5, 11, 20);
+  --foreground: rgb(226, 232, 240);
+  
+  --card: rgb(15, 23, 42); /* Dark slate for card bg */
+  --card-foreground: rgb(241, 245, 249);
+  
+  --popover: rgb(15, 23, 42);
+  --popover-foreground: rgb(241, 245, 249);
+  
+  --primary: rgb(0, 213, 255); /* Neon cyan */
+  --primary-foreground: rgb(0, 0, 0);
+  
+  --secondary: rgb(30, 41, 59);
+  --secondary-foreground: rgb(203, 213, 225);
+  
+  --muted: rgb(25, 35, 50);
+  --muted-foreground: rgb(148, 163, 184);
+  
+  --accent: rgb(25, 60, 95); /* Deep cyan accent */
+  --accent-foreground: rgb(241, 245, 249);
+  
+  --destructive: rgb(239, 68, 68); /* Red */
+  --warning: rgb(245, 158, 11); /* Amber */
+  --success: rgb(16, 185, 129); /* Emerald */
+  
+  --border: rgb(30, 58, 138); /* Slate 800 - dark blueish border */
+  --ring: rgb(0, 213, 255);
+
+  --shadow-x: 0px;
+  --shadow-y: 4px;
+  --shadow-blur: 20px;
+  --shadow-spread: 0px;
+  --shadow-color: rgba(0, 213, 255, 0.1);
+  --shadow-tech: 0 0 10px rgba(0, 213, 255, 0.2), inset 0 0 20px rgba(0, 213, 255, 0.05);
+
+  --radius: 0.5rem;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    background-image: 
+      linear-gradient(rgba(0, 213, 255, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0, 213, 255, 0.03) 1px, transparent 1px);
+    background-size: 30px 30px;
+    background-position: center center;
+  }
+  
+  /* Custom scrollbar for tech feel */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: rgba(15, 23, 42, 1);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(30, 58, 138, 1);
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 213, 255, 0.5);
+  }
+}
+
+@layer utilities {
+  .shadow-custom {
+    box-shadow: var(--shadow-x) var(--shadow-y) var(--shadow-blur) var(--shadow-spread) var(--shadow-color);
+  }
+  .shadow-glow {
+    box-shadow: var(--shadow-tech);
+  }
+  .clip-corner {
+    clip-path: polygon(0 0, 100% 0, 100% calc(100% - 15px), calc(100% - 15px) 100%, 0 100%);
+  }
+  .text-glow {
+    text-shadow: 0 0 10px rgba(0, 213, 255, 0.5);
+  }
+}

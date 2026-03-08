@@ -1,0 +1,661 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --font-sans: var(--fontSans);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --shadow-x: var(--shadow-x);
+  --shadow-y: var(--shadow-y);
+  --shadow-blur: var(--shadow-blur);
+  --shadow-spread: var(--shadow-spread);
+  --shadow-color: var(--shadow-color);
+}
+
+:root {
+  --fontSans: "Inter";
+  --background: rgb(4, 12, 35);
+  --foreground: rgb(180, 220, 255);
+  --card: rgb(8, 22, 60);
+  --card-foreground: rgb(180, 220, 255);
+  --popover: rgb(8, 22, 60);
+  --popover-foreground: rgb(180, 220, 255);
+  --primary: rgb(0, 212, 255);
+  --primary-foreground: rgb(4, 12, 35);
+  --secondary: rgb(0, 150, 200);
+  --secondary-foreground: rgb(255, 255, 255);
+  --muted: rgb(10, 30, 80);
+  --muted-foreground: rgb(100, 160, 200);
+  --accent: rgb(0, 80, 140);
+  --accent-foreground: rgb(0, 212, 255);
+  --destructive: rgb(255, 60, 80);
+  --destructive-foreground: rgb(255, 255, 255);
+  --border: rgb(0, 150, 200);
+  --input: rgb(10, 30, 80);
+  --ring: rgb(0, 212, 255);
+  --chart-1: rgb(0, 212, 255);
+  --chart-2: rgb(0, 150, 200);
+  --chart-3: rgb(80, 200, 255);
+  --chart-4: rgb(0, 100, 180);
+  --chart-5: rgb(120, 220, 255);
+  --radius: 0.5rem;
+  --sidebar: rgb(4, 12, 35);
+  --sidebar-foreground: rgb(180, 220, 255);
+  --sidebar-primary: rgb(0, 212, 255);
+  --sidebar-primary-foreground: rgb(4, 12, 35);
+  --sidebar-accent: rgb(10, 30, 80);
+  --sidebar-accent-foreground: rgb(0, 212, 255);
+  --sidebar-border: rgb(0, 150, 200);
+  --sidebar-ring: rgb(0, 212, 255);
+  --shadow-x: 0px;
+  --shadow-y: 0px;
+  --shadow-blur: 20px;
+  --shadow-spread: 0px;
+  --shadow-opacity: 1;
+  --shadow-color: rgba(0, 212, 255, 0.3);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+    box-sizing: border-box;
+  }
+  body {
+    @apply bg-background text-foreground font-sans;
+    margin: 0;
+    padding: 0;
+    /* 同步 2.0 方案中的背景蒙版渐变，增强文字可读性 */
+    background-color: rgb(6, 14, 35);
+    background-image:
+      radial-gradient(ellipse at 20% 50%, rgba(0, 60, 120, 0.3) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 20%, rgba(0, 80, 160, 0.2) 0%, transparent 50%);
+  }
+  input::placeholder {
+    color: rgba(0, 150, 200, 0.45);
+  }
+}
+
+@layer utilities {
+  .shadow-custom {
+    box-shadow: var(--shadow-x) var(--shadow-y) var(--shadow-blur) var(--shadow-spread) var(--shadow-color);
+  }
+}
+
+/* 系统支撑平台专用主题，复刻 sysreact 原始配色 */
+.system-support-theme {
+  --background: rgb(10, 15, 28);
+  --foreground: rgb(215, 230, 250);
+  --card: rgb(15, 24, 43);
+  --card-foreground: rgb(215, 230, 250);
+  --popover: rgb(15, 24, 43);
+  --popover-foreground: rgb(215, 230, 250);
+  --primary: rgb(0, 195, 255);
+  --primary-foreground: rgb(10, 20, 30);
+  --secondary: rgb(22, 38, 66);
+  --secondary-foreground: rgb(150, 180, 220);
+  --muted: rgb(22, 38, 66);
+  --muted-foreground: rgb(110, 140, 180);
+  --border: rgb(30, 55, 90);
+  --input: rgb(30, 55, 90);
+  --ring: rgb(0, 195, 255);
+  --sidebar-bg: rgb(12, 18, 32);
+  --sidebar-border: rgb(30, 55, 90);
+  --sidebar-active: rgba(0, 195, 255, 0.15);
+}
+
+/* 人员资质管理模块的一些通用样式 */
+.text-glow {
+  text-shadow: 0 0 10px rgba(0, 212, 255, 0.8);
+}
+
+.highlight-line {
+  background: linear-gradient(90deg, rgba(0, 212, 255, 1) 0%, rgba(0, 212, 255, 0) 100%);
+  height: 2px;
+}
+
+.pulse-dot {
+  animation: pulseDot 2s infinite;
+}
+
+@keyframes pulseDot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.grid-bg {
+  background-image:
+    linear-gradient(rgba(0, 150, 200, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 150, 200, 0.05) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+.tech-card {
+  background: rgba(12, 26, 54, 1);
+  border: 1px solid rgba(0, 150, 200, 0.4);
+  position: relative;
+}
+
+.tech-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: inherit;
+  box-shadow: 0 0 15px rgba(0, 212, 255, 0.08) inset;
+  pointer-events: none;
+}
+
+/* 设备运维管理模块的通用卡片与标题样式 */
+.panel-card {
+  background: rgba(16, 22, 38, 1);
+  border: 1px solid rgba(40, 58, 90, 1);
+  border-radius: 6px;
+}
+
+.btn-secondary {
+  background: rgba(24, 34, 58, 1);
+  color: rgba(180, 200, 230, 1);
+  border: 1px solid rgba(40, 58, 90, 1);
+  padding: 6px 16px;
+  border-radius: 4px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-secondary:hover {
+  border-color: rgba(30, 136, 229, 0.6);
+  color: rgba(100, 181, 246, 1);
+}
+
+/* 主操作蓝色按钮（与新增设备按钮一致） */
+.btn-primary-blue {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 8px 14px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #fff;
+  background: rgba(30, 136, 229, 1);
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-primary-blue:hover {
+  background: rgba(30, 136, 229, 0.9);
+}
+
+/* 危险操作红色按钮（如退回） */
+.btn-danger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #fff;
+  background: rgba(239, 68, 68, 1);
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-danger:hover {
+  background: rgba(239, 68, 68, 0.9);
+}
+
+/* 设备运维：表单输入框线框，避免线框丢失 */
+.form-input {
+  display: block;
+  width: 100%;
+  min-height: 32px;
+  padding: 6px 10px;
+  font-size: 13px;
+  color: rgba(220, 228, 240, 1);
+  background: rgba(18, 26, 44, 1);
+  border: 1px solid rgba(40, 58, 90, 1);
+  border-radius: 4px;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.form-input:focus {
+  border-color: rgba(30, 136, 229, 0.8);
+  box-shadow: 0 0 0 2px rgba(30, 136, 229, 0.15);
+}
+
+.form-input::placeholder {
+  color: rgba(100, 130, 170, 0.8);
+}
+
+/* 设备运维：表单标签 */
+.form-label {
+  display: block;
+  font-size: 12px;
+  color: rgba(120, 145, 180, 1);
+  margin-bottom: 4px;
+}
+
+/* 设备运维：表格表头与行线框 */
+.table-header th {
+  background: rgba(22, 32, 54, 1);
+  border: 1px solid rgba(30, 50, 80, 1);
+  border-bottom: 1px solid rgba(30, 50, 80, 1);
+}
+
+.table-row td {
+  border-bottom: 1px solid rgba(30, 50, 80, 1);
+}
+
+.table-row:hover td {
+  background: rgba(30, 50, 80, 0.15);
+}
+
+/* 设备运维：状态标签 pill 线框（与类型列一致） */
+.badge-success {
+  background: rgba(76, 175, 80, 0.15);
+  color: rgba(76, 175, 80, 1);
+  border: 1px solid rgba(76, 175, 80, 0.4);
+}
+
+.badge-danger {
+  background: rgba(239, 68, 68, 0.15);
+  color: rgba(239, 83, 80, 1);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+}
+
+.badge-warning {
+  background: rgba(255, 167, 38, 0.15);
+  color: rgba(255, 193, 7, 1);
+  border: 1px solid rgba(255, 167, 38, 0.4);
+}
+
+.badge-neutral {
+  background: rgba(120, 145, 180, 0.15);
+  color: rgba(160, 185, 215, 1);
+  border: 1px solid rgba(120, 145, 180, 0.4);
+}
+
+.badge-info {
+  background: rgba(30, 136, 229, 0.15);
+  color: rgba(100, 181, 246, 1);
+  border: 1px solid rgba(30, 136, 229, 0.4);
+}
+
+.section-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(120, 145, 180, 1);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 8px 16px;
+  margin-bottom: 2px;
+}
+
+/* Tech grid background */
+.tech-grid {
+  background-image:
+    linear-gradient(rgba(0, 212, 255, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 212, 255, 0.06) 1px, transparent 1px);
+  background-size: 50px 50px;
+}
+
+/* Card scan line animation */
+@keyframes scanLine {
+  0% { top: -100%; opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { top: 200%; opacity: 0; }
+}
+
+/* Glow pulse animation */
+@keyframes glowPulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+/* Float animation */
+@keyframes floatUp {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
+
+/* Corner flicker */
+@keyframes cornerFlicker {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+/* Data flow animation */
+@keyframes dataFlow {
+  0% { background-position: 0% 0%; }
+  100% { background-position: 0% 100%; }
+}
+
+/* Wave animation */
+@keyframes waveMove {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+/* Title glow animation */
+@keyframes titleGlow {
+  0%, 100% {
+    text-shadow:
+      0 0 10px rgba(0, 212, 255, 0.8),
+      0 0 20px rgba(0, 212, 255, 0.6),
+      0 0 40px rgba(0, 212, 255, 0.4);
+  }
+  50% {
+    text-shadow:
+      0 0 20px rgba(0, 212, 255, 1),
+      0 0 40px rgba(0, 212, 255, 0.8),
+      0 0 80px rgba(0, 212, 255, 0.6);
+  }
+}
+
+/* Rotate animation for icons */
+@keyframes iconRotate {
+  0% { filter: drop-shadow(0 0 8px rgba(0, 212, 255, 0.8)); }
+  50% { filter: drop-shadow(0 0 16px rgba(0, 212, 255, 1)) drop-shadow(0 0 30px rgba(0, 180, 255, 0.6)); }
+  100% { filter: drop-shadow(0 0 8px rgba(0, 212, 255, 0.8)); }
+}
+
+/* Orbit rotate animation */
+@keyframes orbitRotate {
+  0% { transform: rotateX(72deg) rotateZ(0deg); }
+  100% { transform: rotateX(72deg) rotateZ(360deg); }
+}
+
+/* Orbit rotate reverse */
+@keyframes orbitRotateReverse {
+  0% { transform: rotateX(72deg) rotateZ(0deg); }
+  100% { transform: rotateX(72deg) rotateZ(-360deg); }
+}
+
+/* Drone float animation */
+@keyframes droneFloat {
+  0%, 100% { transform: translateY(0px) rotate(-2deg); }
+  33% { transform: translateY(-12px) rotate(2deg); }
+  66% { transform: translateY(-6px) rotate(-1deg); }
+}
+
+/* City pulse */
+@keyframes cityPulse {
+  0%, 100% { opacity: 0.75; }
+  50% { opacity: 1; }
+}
+
+/* Scan ring expand */
+@keyframes scanRing {
+  0% { transform: scale(0.6); opacity: 0.6; }
+  100% { transform: scale(1.3); opacity: 0; }
+}
+
+/* Button glow pulse */
+@keyframes btnGlow {
+  0%, 100% { box-shadow: 0 0 20px rgba(0, 180, 255, 0.35), inset 0 0 10px rgba(255, 255, 255, 0.08); }
+  50% { box-shadow: 0 0 35px rgba(0, 200, 255, 0.55), inset 0 0 14px rgba(255, 255, 255, 0.12); }
+}
+
+/* Spin animation */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.animate-scan {
+  animation: scanLine 3s linear infinite;
+}
+
+.animate-glow-pulse {
+  animation: glowPulse 2s ease-in-out infinite;
+}
+
+.animate-float {
+  animation: floatUp 4s ease-in-out infinite;
+}
+
+.animate-corner {
+  animation: cornerFlicker 1.5s ease-in-out infinite;
+}
+
+.animate-title-glow {
+  animation: titleGlow 2.5s ease-in-out infinite;
+}
+
+.animate-icon-glow {
+  animation: iconRotate 2s ease-in-out infinite;
+}
+
+.animate-wave {
+  animation: waveMove 20s linear infinite;
+}
+
+.animate-orbit-rotate {
+  animation: orbitRotate 18s linear infinite;
+}
+
+.animate-orbit-rotate-reverse {
+  animation: orbitRotateReverse 12s linear infinite;
+}
+
+.animate-drone-float {
+  animation: droneFloat 4.5s ease-in-out infinite;
+}
+
+.animate-city-pulse {
+  animation: cityPulse 2.5s ease-in-out infinite;
+}
+
+.animate-scan-ring {
+  animation: scanRing 3s ease-out infinite;
+}
+
+.animate-btn-glow {
+  animation: btnGlow 2.5s ease-in-out infinite;
+}
+
+/* ========== 综合指挥中心 FUI 样式 (command-center) ========== */
+.fui-panel {
+  background: rgba(4, 14, 36, 0.90);
+  border: 1px solid rgba(0, 180, 220, 0.28);
+  backdrop-filter: blur(16px);
+  position: relative;
+  overflow: hidden;
+}
+.fui-panel::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, rgba(0, 210, 255, 0.8) 30%, rgba(0, 255, 200, 0.6) 70%, transparent 100%);
+  z-index: 1;
+}
+.fui-panel-bright {
+  background: rgba(3, 12, 32, 0.92);
+  border: 1px solid rgba(0, 200, 255, 0.45);
+  backdrop-filter: blur(16px);
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 0 20px rgba(0, 180, 255, 0.12), inset 0 0 30px rgba(0, 100, 180, 0.05);
+}
+.fui-panel-bright::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(0, 210, 255, 1), rgba(0, 255, 200, 0.8), transparent);
+  z-index: 1;
+}
+.fui-corner::before {
+  content: '';
+  position: absolute;
+  top: -1px;
+  left: -1px;
+  width: 16px;
+  height: 16px;
+  border-top: 2px solid rgba(0, 210, 255, 0.9);
+  border-left: 2px solid rgba(0, 210, 255, 0.9);
+  z-index: 2;
+}
+.fui-corner::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  right: -1px;
+  width: 16px;
+  height: 16px;
+  border-bottom: 2px solid rgba(0, 210, 255, 0.9);
+  border-right: 2px solid rgba(0, 210, 255, 0.9);
+  z-index: 2;
+}
+.fui-title {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  color: rgba(0, 210, 255, 1);
+  text-transform: uppercase;
+}
+.data-value {
+  font-family: 'Courier New', Courier, monospace;
+  font-weight: 700;
+  color: rgba(0, 230, 255, 1);
+  text-shadow: 0 0 10px rgba(0, 210, 255, 0.8);
+}
+@keyframes pulse-green-kf {
+  0%, 100% { opacity: 1; box-shadow: 0 0 6px rgba(0, 255, 140, 0.8); }
+  50% { opacity: 0.5; box-shadow: 0 0 16px rgba(0, 255, 140, 1), 0 0 30px rgba(0, 255, 140, 0.5); }
+}
+@keyframes blink-kf {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.2; }
+}
+@keyframes rotate-slow-kf {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+@keyframes rotate-slow-reverse-kf {
+  from { transform: rotate(360deg); }
+  to { transform: rotate(0deg); }
+}
+@keyframes float-drone-kf {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-4px); }
+}
+@keyframes number-flash-kf {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+.pulse-green { animation: pulse-green-kf 2s ease-in-out infinite; }
+.blink-alert { animation: blink-kf 1s ease-in-out infinite; }
+/* Traffic enforcement module (business/traffic) - dark theme */
+.enf-card {
+  background: rgba(8, 24, 60, 1);
+  border: 1px solid rgba(0, 140, 200, 0.32);
+  border-radius: 8px;
+  box-shadow: 0px 2px 18px rgba(0, 200, 240, 0.07);
+}
+.blink { animation: blink-kf 1.4s ease-in-out infinite; }
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.spin { animation: spin 1.2s linear infinite; }
+@keyframes progress-bar {
+  0% { background-position: 0 0; }
+  100% { background-position: 40px 0; }
+}
+.progress-stripe {
+  background-image: linear-gradient(
+    45deg,
+    rgba(255, 255, 255, 0.13) 25%,
+    transparent 25%,
+    transparent 50%,
+    rgba(255, 255, 255, 0.13) 50%,
+    rgba(255, 255, 255, 0.13) 75%,
+    transparent 75%,
+    transparent
+  );
+  background-size: 40px 40px;
+  animation: progress-bar 1s linear infinite;
+}
+.scanline {
+  background-image: repeating-linear-gradient(
+    0deg,
+    rgba(0, 180, 220, 0.025) 0px,
+    rgba(0, 180, 220, 0.025) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+}
+.rotate-slow { animation: rotate-slow-kf 10s linear infinite; }
+.rotate-slow-reverse { animation: rotate-slow-reverse-kf 14s linear infinite; }
+.float-drone { animation: float-drone-kf 3s ease-in-out infinite; }
+.number-flash { animation: number-flash-kf 3s ease-in-out infinite; }
+
+/* Flight control module (fly) tech utilities */
+.tech-border {
+  border: 1px solid rgba(30, 58, 138, 0.6);
+  box-shadow: inset 0 0 20px rgba(0, 229, 255, 0.05);
+}
+.tech-border-active {
+  border: 1px solid rgba(0, 229, 255, 0.5);
+  box-shadow: 0 0 10px rgba(0, 229, 255, 0.2), inset 0 0 20px rgba(0, 229, 255, 0.1);
+}
+.tech-text-glow {
+  text-shadow: 0 0 8px rgba(0, 229, 255, 0.5);
+}
+.clip-chamfer {
+  clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+}
+.clip-chamfer-reverse {
+  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+}

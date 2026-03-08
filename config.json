@@ -1,0 +1,20 @@
+{
+  "routes": [
+    { "path": "/", "src": "src/pages/LoginPage.tsx" },
+    { "path": "/hub", "src": "src/pages/NavigationHub.tsx" },
+    { "path": "/command", "src": "src/pages/CommandCenter.tsx" }
+  ],
+  "components": [
+    { "name": "LoginForm", "src": "src/components/LoginForm.tsx" },
+    { "name": "DroneOrbit", "src": "src/components/DroneOrbit.tsx" },
+    { "name": "ModuleCard", "src": "src/components/ModuleCard.tsx" },
+    { "name": "GridBackground", "src": "src/components/GridBackground.tsx" },
+    { "name": "ParticleWave", "src": "src/components/ParticleWave.tsx" },
+    { "name": "PlatformLayout", "src": "src/components/PlatformLayout.tsx" },
+    { "name": "CommandDashboard", "src": "src/components/CommandDashboard.tsx" },
+    { "name": "CommandMap", "src": "src/components/CommandMap.tsx" },
+    { "name": "CommandDeviceList", "src": "src/components/CommandDeviceList.tsx" },
+    { "name": "CommandAlerts", "src": "src/components/CommandAlerts.tsx" },
+    { "name": "CommandMonitor", "src": "src/components/CommandMonitor.tsx" }
+  ]
+}

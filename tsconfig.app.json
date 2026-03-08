@@ -1,0 +1,38 @@
+{
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
+    "target": "ES2022",
+    "useDefineForClassFields": true,
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "types": ["vite/client"],
+    "skipLibCheck": true,
+
+    /* Bundler mode */
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": false,
+    "moduleDetection": "force",
+    "noEmit": true,
+    "jsx": "react-jsx",
+
+    /* Linting */
+    "strict": false,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "noFallthroughCasesInSwitch": false,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"],
+      "@device/*": ["./src/device/*"],
+      "@personnel/*": ["./src/personnel/*"],
+      "@mission/*": ["./src/mission/*"],
+      "@data/*": ["./src/data/*"],
+      "@system/*": ["./src/system/*"],
+      "@business/*": ["./src/business/*"],
+      "@fly/*": ["./src/fly/*"],
+      "@urban/*": ["./src/business/urban/*"]
+    }
+  },
+  "include": ["src","auto-imports.d.ts"]
+}
