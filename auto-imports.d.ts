@@ -201,6 +201,7 @@ declare global {
   const Server: typeof import('lucide-react').Server
   const Settings: typeof import('lucide-react').Settings
   const Settings2: typeof import('lucide-react').Settings2
+  const Share2: typeof import('lucide-react').Share2
   const Sheet: typeof import('lucide-react').Sheet
   const Shield: typeof import('lucide-react').Shield
   const ShieldAlert: typeof import('lucide-react').ShieldAlert

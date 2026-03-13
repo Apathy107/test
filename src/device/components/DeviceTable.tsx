@@ -1,6 +1,6 @@
 import React, { useState, useMemo, forwardRef, useImperativeHandle, useRef } from "react";
 import StatusBadge from "./StatusBadge";
-import { Eye, Edit2, LayoutGrid, List, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { Eye, Edit2, LayoutGrid, List, ArrowUpDown, ArrowUp, ArrowDown, KeyRound } from "lucide-react";
 
 export interface Device {
   id: string;
@@ -36,6 +36,7 @@ interface DeviceTableProps {
   sortOrder?: "asc" | "desc";
   onView?: (device: Device) => void;
   onEdit?: (device: Device) => void;
+  onBind?: (device: Device) => void;
   onSort?: (field: string, order: "asc" | "desc") => void;
 }
 
@@ -74,6 +75,7 @@ const DeviceTable = forwardRef<DeviceTableRef, DeviceTableProps>(({
   sortOrder = "asc",
   onView = (d) => console.log("View device:", d.sn),
   onEdit = (d) => console.log("Edit device:", d.sn),
+  onBind,
   onSort,
 }, ref) => {
   const [selected, setSelected] = useState<string[]>([]);
@@ -154,6 +156,15 @@ const DeviceTable = forwardRef<DeviceTableRef, DeviceTableProps>(({
       >
         <Eye size={14} />
       </button>
+      {onBind && (
+        <button
+          onClick={() => onBind(device)}
+          title="绑定"
+          style={{ background: "rgba(30,136,229,0.15)", border: "1px solid rgba(30,136,229,0.3)", color: "rgba(100,181,246,1)", padding: "6px", borderRadius: 3, cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center" }}
+        >
+          <KeyRound size={14} />
+        </button>
+      )}
       <button
         onClick={() => onEdit(device)}
         title="编辑"
@@ -173,11 +184,11 @@ const DeviceTable = forwardRef<DeviceTableRef, DeviceTableProps>(({
     { key: "model", label: "型号", width: 110 },
     { key: "firmware", label: "固件版本", width: 110 },
     { key: "status", label: "状态", width: 90 },
-    { key: "unit", label: "所属单位", width: 110 },
+    { key: "unit", label: "部门", width: 110 },
     { key: "responsible", label: "责任人", width: 80 },
     { key: "purchaseDate", label: "采购日期", width: 100 },
     { key: "flightHours", label: "飞行时长(h)", width: 100 },
-    { key: "action", label: "操作", width: 90 },
+    { key: "action", label: "操作", width: 110 },
   ];
 
   return (
@@ -207,7 +218,7 @@ const DeviceTable = forwardRef<DeviceTableRef, DeviceTableProps>(({
                 <span style={{ marginLeft: 6 }}>{device.model}</span>
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px 12px", fontSize: 11, color: "rgba(120,145,180,1)", marginBottom: 12 }}>
-                <span>所属单位</span>
+                <span>部门</span>
                 <span>{device.unit}</span>
                 <span>责任人</span>
                 <span>{device.responsible}</span>

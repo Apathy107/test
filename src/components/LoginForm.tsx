@@ -1,29 +1,99 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Eye, EyeOff, Phone, Lock, LogIn } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { CREDENTIALS } from "../auth/credentials";
 
+const STORAGE_KEY_REMEMBER = "fly_login_remember";
+const STORAGE_KEY_USERNAME = "fly_saved_username";
+const STORAGE_KEY_PASSWORD = "fly_saved_password";
+const DEFAULT_ADMIN = "admin";
+const DEFAULT_PASSWORD = CREDENTIALS[DEFAULT_ADMIN] ?? "";
+
 /**
  * LoginForm - Tech-style login form with phone/password fields
+ * 默认 admin 账号，记住密码，支持免密自动登录
  */
 const LoginForm: React.FC = () => {
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [phoneHover, setPhoneHover] = useState(false);
   const [pwHover, setPwHover] = useState(false);
   const navigate = useNavigate();
+  const autoLoginAttempted = useRef(false);
 
-  /** 校验用户名与密码，通过后进入导航页 */
+  /** 从本地存储恢复记住的账号密码，无则使用默认 admin */
+  useEffect(() => {
+    try {
+      const savedRemember = localStorage.getItem(STORAGE_KEY_REMEMBER) === "1";
+      const savedUsername = localStorage.getItem(STORAGE_KEY_USERNAME);
+      const savedPassword = localStorage.getItem(STORAGE_KEY_PASSWORD);
+      if (savedRemember && savedUsername != null && savedPassword != null) {
+        setPhone(savedUsername);
+        setPassword(savedPassword);
+        setRememberMe(true);
+      } else {
+        setPhone(DEFAULT_ADMIN);
+        setPassword(DEFAULT_PASSWORD);
+        setRememberMe(true);
+      }
+    } catch {
+      setPhone(DEFAULT_ADMIN);
+      setPassword(DEFAULT_PASSWORD);
+      setRememberMe(true);
+    }
+  }, []);
+
+  /** 已勾选记住密码且凭证有效时自动登录（免密）；首次默认 admin 也会自动登入 */
+  useEffect(() => {
+    if (autoLoginAttempted.current || !phone.trim() || !password) return;
+    const expectedPwd = CREDENTIALS[phone.trim()];
+    if (expectedPwd === undefined || password !== expectedPwd) return;
+    if (!rememberMe) return;
+    autoLoginAttempted.current = true;
+    setIsLoading(true);
+    setTimeout(() => {
+      if (rememberMe) {
+        try {
+          localStorage.setItem(STORAGE_KEY_REMEMBER, "1");
+          localStorage.setItem(STORAGE_KEY_USERNAME, phone.trim());
+          localStorage.setItem(STORAGE_KEY_PASSWORD, password);
+        } catch {
+          /* ignore */
+        }
+      }
+      setIsLoading(false);
+      navigate("/hub");
+    }, 600);
+  }, [phone, password, rememberMe, navigate]);
+
+  /** 校验用户名与密码，通过后进入导航页；记住密码时写入本地存储 */
   const handleLogin = () => {
     setError("");
     const username = phone.trim();
     const pwd = password;
     const expectedPwd = CREDENTIALS[username];
     if (expectedPwd !== undefined && pwd === expectedPwd) {
+      if (rememberMe) {
+        try {
+          localStorage.setItem(STORAGE_KEY_REMEMBER, "1");
+          localStorage.setItem(STORAGE_KEY_USERNAME, username);
+          localStorage.setItem(STORAGE_KEY_PASSWORD, pwd);
+        } catch {
+          /* ignore */
+        }
+      } else {
+        try {
+          localStorage.removeItem(STORAGE_KEY_REMEMBER);
+          localStorage.removeItem(STORAGE_KEY_USERNAME);
+          localStorage.removeItem(STORAGE_KEY_PASSWORD);
+        } catch {
+          /* ignore */
+        }
+      }
       setIsLoading(true);
       setTimeout(() => {
         setIsLoading(false);

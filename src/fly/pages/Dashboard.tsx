@@ -5,7 +5,7 @@ import {
   MousePointer2, ChevronRight, Eye, Bot, Camera,
   ZoomIn, ZoomOut, Maximize, Minimize2, RotateCcw, ArrowLeft,
   Layers, Settings, Radio, Activity, Navigation, Battery,
-  Wifi, User, List, MapPin, Home, ArrowDown, ArrowUp, ArrowRight, LayoutGrid, Satellite
+  Wifi, User, List, MapPin, Home, ArrowDown, ArrowUp, ArrowRight, LayoutGrid, Satellite, Search
 } from 'lucide-react';
 import TransferControlModal from '../components/TransferControlModal';
 import FlightTopBar from '../components/FlightTopBar';
@@ -41,11 +41,14 @@ const MISSIONS = [
   },
 ];
 
-// 左侧设备列表
-const DEVICES = [
-  { id: 'dock-a', name: 'DJI Dock 3 (A区)', status: '在线', desc: '园区东侧机场' },
-  { id: 'dock-b', name: 'DJI Dock 3 (B区)', status: '在线', desc: '园区西侧机场' },
-  { id: 'dock-c', name: '应急备份机场', status: '离线', desc: '城区应急备份点位' },
+// 左侧设备列表（含设备类型，用于筛选与标签展示）
+type DeviceType = '机场' | '飞机';
+const DEVICES: { id: string; name: string; type: DeviceType; status: '在线' | '离线'; desc: string }[] = [
+  { id: 'dock-a', name: 'DJI Dock 3 (A区)', type: '机场', status: '在线', desc: '园区东侧机场' },
+  { id: 'dock-b', name: 'DJI Dock 3 (B区)', type: '机场', status: '在线', desc: '园区西侧机场' },
+  { id: 'dock-c', name: '应急备份机场', type: '机场', status: '离线', desc: '城区应急备份点位' },
+  { id: 'uav-1', name: 'M30T 巡检1号', type: '飞机', status: '在线', desc: '日常巡检机' },
+  { id: 'uav-2', name: 'M30 应急2号', type: '飞机', status: '离线', desc: '应急备机' },
 ];
 
 // AI algorithm options
@@ -99,6 +102,9 @@ export default function Dashboard() {
   const [trajectoryMenu, setTrajectoryMenu] = useState<{ x: number; y: number } | null>(null);
   const [showIrPalettePopover, setShowIrPalettePopover] = useState(false);
   const [trajectoryFullscreen, setTrajectoryFullscreen] = useState(false);
+  const [deviceTypeFilter, setDeviceTypeFilter] = useState<'' | DeviceType>('');
+  const [deviceOnlineFilter, setDeviceOnlineFilter] = useState<'' | '在线' | '离线'>('');
+  const [deviceSearch, setDeviceSearch] = useState('');
   const [aiEvents, setAiEvents] = useState<AiEvent[]>(() => [
     {
       id: 'ev-1',
@@ -149,6 +155,15 @@ export default function Dashboard() {
     () => (selectedDeviceId ? DEVICES.find((d) => d.id === selectedDeviceId) ?? null : null),
     [selectedDeviceId]
   );
+
+  const filteredDevices = useMemo(() => {
+    let list = DEVICES;
+    if (deviceTypeFilter) list = list.filter((d) => d.type === deviceTypeFilter);
+    if (deviceOnlineFilter) list = list.filter((d) => d.status === deviceOnlineFilter);
+    const kw = deviceSearch.trim().toLowerCase();
+    if (kw) list = list.filter((d) => d.name.toLowerCase().includes(kw) || d.desc.toLowerCase().includes(kw) || d.id.toLowerCase().includes(kw));
+    return list;
+  }, [deviceTypeFilter, deviceOnlineFilter, deviceSearch]);
 
   const [now, setNow] = useState(() => {
     const d = new Date();
@@ -294,32 +309,72 @@ export default function Dashboard() {
               <div className="text-[10px] text-muted-foreground mb-1 flex items-center gap-1">
                 <Radio size={10} /> 设备列表
               </div>
-              {DEVICES.map((dev) => {
-                const isActive = dev.id === selectedDeviceId;
-                const tone = dev.status === '在线' ? 'rgb(34,197,94)' : 'rgb(148,163,184)';
-                return (
-                  <button
-                    key={dev.id}
-                    className="w-full text-left rounded p-2 text-[10px] transition-all"
-                    style={{
-                      background: isActive ? 'rgba(0,229,255,0.08)' : 'rgba(15,23,42,0.5)',
-                      border: `1px solid ${isActive ? 'rgba(0,229,255,0.45)' : 'rgba(30,58,138,0.5)'}`,
-                    }}
-                    onClick={() => {
-                      setSelectedDeviceId(dev.id);
-                      setLeftTab('mission');
-                    }}
+              {/* 筛选：类型、在线、模糊搜索 */}
+              <div className="space-y-1.5 mb-2">
+                <div className="relative">
+                  <Search size={10} className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                  <input
+                    type="text"
+                    placeholder="搜索设备名称/描述"
+                    className="w-full pl-7 pr-2 py-1.5 rounded text-[10px] bg-background border border-border text-foreground placeholder:text-muted-foreground"
+                    value={deviceSearch}
+                    onChange={(e) => setDeviceSearch(e.target.value)}
+                  />
+                </div>
+                <div className="flex gap-1 flex-wrap">
+                  <select
+                    className="flex-1 min-w-0 px-2 py-1 rounded text-[10px] bg-background border border-border text-foreground"
+                    value={deviceTypeFilter}
+                    onChange={(e) => setDeviceTypeFilter(e.target.value as '' | DeviceType)}
                   >
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-[11px] text-foreground truncate">{dev.name}</span>
-                      <span className="px-1.5 py-0.5 rounded-full" style={{ border: `1px solid ${tone}`, color: tone, background: 'rgba(15,23,42,0.8)' }}>
-                        {dev.status}
-                      </span>
-                    </div>
-                    <div className="text-[10px] text-muted-foreground truncate">{dev.desc}</div>
-                  </button>
-                );
-              })}
+                    <option value="">全部类型</option>
+                    <option value="机场">机场</option>
+                    <option value="飞机">飞机</option>
+                  </select>
+                  <select
+                    className="flex-1 min-w-0 px-2 py-1 rounded text-[10px] bg-background border border-border text-foreground"
+                    value={deviceOnlineFilter}
+                    onChange={(e) => setDeviceOnlineFilter(e.target.value as '' | '在线' | '离线')}
+                  >
+                    <option value="">全部状态</option>
+                    <option value="在线">在线</option>
+                    <option value="离线">离线</option>
+                  </select>
+                </div>
+              </div>
+              {filteredDevices.length === 0 ? (
+                <div className="text-[10px] text-muted-foreground py-4 text-center">无匹配设备</div>
+              ) : (
+                filteredDevices.map((dev) => {
+                  const isActive = dev.id === selectedDeviceId;
+                  const tone = dev.status === '在线' ? 'rgb(34,197,94)' : 'rgb(148,163,184)';
+                  return (
+                    <button
+                      key={dev.id}
+                      className="w-full text-left rounded p-2 text-[10px] transition-all"
+                      style={{
+                        background: isActive ? 'rgba(0,229,255,0.08)' : 'rgba(15,23,42,0.5)',
+                        border: `1px solid ${isActive ? 'rgba(0,229,255,0.45)' : 'rgba(30,58,138,0.5)'}`,
+                      }}
+                      onClick={() => {
+                        setSelectedDeviceId(dev.id);
+                        setLeftTab('mission');
+                      }}
+                    >
+                      <div className="flex items-center justify-between mb-1 gap-1">
+                        <span className="text-[11px] text-foreground truncate flex-1">{dev.name}</span>
+                        <span className="px-1.5 py-0.5 rounded text-[9px] shrink-0" style={{ border: '1px solid rgba(0,229,255,0.5)', color: 'rgb(0,229,255)', background: 'rgba(0,229,255,0.1)' }}>
+                          {dev.type}
+                        </span>
+                        <span className="px-1.5 py-0.5 rounded-full shrink-0" style={{ border: `1px solid ${tone}`, color: tone, background: 'rgba(15,23,42,0.8)' }}>
+                          {dev.status}
+                        </span>
+                      </div>
+                      <div className="text-[10px] text-muted-foreground truncate">{dev.desc}</div>
+                    </button>
+                  );
+                })
+              )}
               <div className="text-[10px] text-muted-foreground mt-1">
                 选择设备后，将进入任务面板进行航线执行。
               </div>

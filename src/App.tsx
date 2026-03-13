@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import LoginPage from "./pages/LoginPage";
 import NavigationHub from "./pages/NavigationHub";
+import ShareBindPage from "./pages/ShareBindPage";
 import CommandCenter from "./pages/CommandCenter";
 import DeviceLayout from "./device/DeviceLayout";
 import DeviceDashboard from "./device/pages/Dashboard";
@@ -96,6 +97,7 @@ const App = () => {
             <Routes>
             <Route path="/" element={<LoginPage />} />
             <Route path="/hub" element={<NavigationHub />} />
+            <Route path="/share/bind" element={<ShareBindPage />} />
             <Route path="/fly" element={<FlyLayout />}>
               <Route index element={<FlyDashboard />} />
               <Route path="routes" element={<FlyRoutes />} />

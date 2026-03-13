@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, Link } from 'react-router-dom';
-import { Layers, CheckCircle, Clock, Plus, Pause, Play, FileText, Eye } from 'lucide-react';
+import { Layers, CheckCircle, Clock, Plus, Pause, Play, FileText, Eye, Share2, Copy } from 'lucide-react';
 import CyberPanel from '../components/CyberPanel';
 import ModelingReportViewer from '../components/ModelingReportViewer';
 import {
@@ -27,11 +27,18 @@ const INITIAL_TASKS: ModelingTask[] = [
   { id: 'MOD-0913', name: '工业园二期施工进度建模', type: '倾斜采集', progress: 65, status: 'running', date: '今天 09:30' },
 ];
 
+type ShareExpiry = '1d' | '7d' | '1m' | '3m' | 'permanent' | 'custom';
+
 export default function Modeling() {
   const location = useLocation();
   const [tasks, setTasks] = useState<ModelingTask[]>(INITIAL_TASKS);
   const [previewTask, setPreviewTask] = useState<ModelingTask | null>(null);
   const [reportTask, setReportTask] = useState<ModelingTask | null>(null);
+  const [shareTask, setShareTask] = useState<ModelingTask | null>(null);
+  const [shareExpiry, setShareExpiry] = useState<ShareExpiry>('7d');
+  const [shareCustomExpiry, setShareCustomExpiry] = useState('');
+  const [shareLink, setShareLink] = useState<string | null>(null);
+  const [shareCopied, setShareCopied] = useState(false);
 
   // 从数据分类管理勾选照片发起云端建模后跳转回来，新增一条任务（支持自定义任务名称）
   useEffect(() => {
@@ -61,6 +68,51 @@ export default function Modeling() {
 
   const openReport = (task: ModelingTask) => {
     setReportTask(task);
+  };
+
+  const openShare = (task: ModelingTask) => {
+    setShareTask(task);
+    setShareLink(null);
+    setShareCopied(false);
+    setShareExpiry('7d');
+    setShareCustomExpiry('');
+  };
+
+  const getShareExpiryDate = (): Date | null => {
+    if (shareExpiry === 'permanent') return null;
+    if (shareExpiry === 'custom') {
+      if (!shareCustomExpiry.trim()) return null;
+      const d = new Date(shareCustomExpiry);
+      return isNaN(d.getTime()) ? null : d;
+    }
+    const now = new Date();
+    if (shareExpiry === '1d') now.setDate(now.getDate() + 1);
+    else if (shareExpiry === '7d') now.setDate(now.getDate() + 7);
+    else if (shareExpiry === '1m') now.setMonth(now.getMonth() + 1);
+    else if (shareExpiry === '3m') now.setMonth(now.getMonth() + 3);
+    return now;
+  };
+
+  const generateShareLink = () => {
+    if (!shareTask) return;
+    const expires = getShareExpiryDate();
+    const base = window.location.origin;
+    const params = new URLSearchParams();
+    params.set('task', shareTask.id);
+    if (expires) params.set('expires', expires.toISOString());
+    const link = `${base}/share/modeling?${params.toString()}`;
+    setShareLink(link);
+  };
+
+  const copyShareLink = async () => {
+    if (!shareLink) return;
+    try {
+      await navigator.clipboard.writeText(shareLink);
+      setShareCopied(true);
+      setTimeout(() => setShareCopied(false), 2000);
+    } catch {
+      setShareLink(shareLink);
+    }
   };
 
   const statusLabel = (s: TaskStatus) => (s === 'completed' ? '完成' : s === 'paused' ? '已暂停' : '处理中');
@@ -160,6 +212,13 @@ export default function Modeling() {
                             >
                               <FileText size={14} /> 建模报告
                             </button>
+                            <button
+                              type="button"
+                              className="text-primary hover:underline text-xs flex items-center gap-1"
+                              onClick={() => openShare(t)}
+                            >
+                              <Share2 size={14} /> 分享
+                            </button>
                           </>
                         )}
                         {t.progress < 100 && t.status !== 'paused' && (
@@ -215,6 +274,65 @@ export default function Modeling() {
         onOpenChange={(open) => !open && setReportTask(null)}
         taskName={reportTask?.name}
       />
+
+      {/* 分享：有效期 1天/7天/1个月/3个月/永久/自定义 */}
+      <Dialog open={!!shareTask} onOpenChange={(open) => !open && setShareTask(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Share2 size={18} /> 分享成果 - {shareTask?.name}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div>
+              <label className="text-sm font-medium text-foreground block mb-2">分享有效期</label>
+              <select
+                className="w-full px-3 py-2 rounded border border-border bg-background text-foreground text-sm"
+                value={shareExpiry}
+                onChange={(e) => setShareExpiry(e.target.value as ShareExpiry)}
+              >
+                <option value="1d">1 天</option>
+                <option value="7d">7 天</option>
+                <option value="1m">1 个月</option>
+                <option value="3m">3 个月</option>
+                <option value="permanent">永久</option>
+                <option value="custom">自定义时间</option>
+              </select>
+              {shareExpiry === 'custom' && (
+                <input
+                  type="datetime-local"
+                  className="mt-2 w-full px-3 py-2 rounded border border-border bg-background text-foreground text-sm"
+                  value={shareCustomExpiry}
+                  onChange={(e) => setShareCustomExpiry(e.target.value)}
+                />
+              )}
+            </div>
+            {!shareLink ? (
+              <Button
+                className="w-full gap-2"
+                onClick={generateShareLink}
+                disabled={shareExpiry === 'custom' && !shareCustomExpiry.trim()}
+              >
+                生成分享链接
+              </Button>
+            ) : (
+              <div className="space-y-2">
+                <p className="text-xs text-muted-foreground">复制以下链接分享给他人：</p>
+                <div className="flex gap-2">
+                  <input
+                    readOnly
+                    className="flex-1 px-3 py-2 rounded border border-border bg-muted/50 text-foreground text-xs font-mono"
+                    value={shareLink}
+                  />
+                  <Button variant="outline" size="sm" className="gap-1 shrink-0" onClick={copyShareLink}>
+                    <Copy size={14} /> {shareCopied ? '已复制' : '复制'}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

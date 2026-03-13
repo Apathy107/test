@@ -16,7 +16,9 @@ const INIT_FILTER: { search: string; type: string; unit: string; status: string;
 const DeviceArchive: React.FC = () => {
   const [tab, setTab] = useState<TabType>("list");
   const [showDetail, setShowDetail] = useState(false);
-  const [selectedDevice, setSelectedDevice] = useState<{ name: string; sn: string } | null>(null);
+  const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
+  const [showBindModal, setShowBindModal] = useState(false);
+  const [listBindInfo, setListBindInfo] = useState<{ orgId: string; orgName: string; mqttUrl: string; mqttUser: string; mqttPwd: string; bindingCode: string; sn: string; name: string; unit: string } | null>(null);
   const [deviceTypeTab, setDeviceTypeTab] = useState<DeviceTypeTab>("全部");
   const [listViewMode, setListViewMode] = useState<ListViewMode>("table");
   const [sortField, setSortField] = useState("name");
@@ -52,12 +54,47 @@ const DeviceArchive: React.FC = () => {
     });
   };
 
+  /** 从设备列表点击绑定时生成绑定信息并弹出绑定码弹窗 */
+  const openBindModal = (device: Device) => {
+    const code = "BND-" + device.id + "-" + Math.random().toString(36).slice(2, 8).toUpperCase();
+    const info = {
+      orgId: "ORG-" + Math.floor(1000 + Math.random() * 9000),
+      orgName: device.unit || "市局直属队",
+      mqttUrl: "mqtts://fly.example.com:8883",
+      mqttUser: "device_" + device.sn.replace(/-/g, "_"),
+      mqttPwd: Math.random().toString(36).slice(2, 14),
+      bindingCode: code,
+      sn: device.sn,
+      name: device.name,
+      unit: device.unit,
+    };
+    setListBindInfo(info);
+    setShowBindModal(true);
+  };
+
+  /** 生成扫码后打开的绑定信息页 URL，手机扫描后展示绑定信息并支持复制 */
+  const getBindShareUrl = (info: typeof listBindInfo) => {
+    if (!info) return "";
+    const base = window.location.origin + "/share/bind";
+    const params = new URLSearchParams({
+      code: info.bindingCode,
+      sn: info.sn,
+      unit: info.unit,
+      name: info.name,
+      orgId: info.orgId,
+      mqttUrl: info.mqttUrl,
+      mqttUser: info.mqttUser,
+      mqttPwd: info.mqttPwd,
+    });
+    return `${base}?${params.toString()}`;
+  };
+
   const handleBatchExport = () => {
     const selectedList = deviceTableRef.current?.getSelectedDevices() ?? [];
     const list = selectedList.length > 0 ? selectedList : (deviceTableRef.current?.getSortedDevices?.() ?? []);
     if (list.length === 0) return;
     const statusMap: Record<string, string> = { online: "在线", offline: "离线", fault: "故障", maintenance: "维护中" };
-    const headers = ["设备ID", "SN序列号", "设备名称", "类型", "型号", "固件版本", "状态", "所属单位", "责任人", "采购日期", "飞行时长(h)"];
+    const headers = ["设备ID", "SN序列号", "设备名称", "类型", "型号", "固件版本", "状态", "部门", "责任人", "采购日期", "飞行时长(h)"];
     const rows = list.map((d) => [
       d.id, d.sn, d.name, d.type, d.model, d.firmware, statusMap[d.status] ?? d.status, d.unit, d.responsible, d.purchaseDate, String(d.flightHours ?? ""),
     ]);
@@ -88,7 +125,7 @@ const DeviceArchive: React.FC = () => {
 
   const filterFields = [
     { label: "设备类型", options: ["全部", ...DEVICE_TYPES] },
-    { label: "所属单位", options: ["全部单位", "市局直属队", "东城分局", "西城分局", "南区分局", "郊区管理站"] },
+    { label: "部门", options: ["全部单位", "市局直属队", "东城分局", "西城分局", "南区分局", "郊区管理站"] },
     { label: "状态", options: ["全部", "在线", "离线", "故障", "维护中"] },
   ];
 
@@ -177,7 +214,7 @@ const DeviceArchive: React.FC = () => {
                 </select>
               </div>
               <div style={{ flex: "0 0 140px" }}>
-                <label className="form-label" style={{ display: "block", marginBottom: 4, fontSize: 12, color: "rgba(120,145,180,1)" }}>所属单位</label>
+                <label className="form-label" style={{ display: "block", marginBottom: 4, fontSize: 12, color: "rgba(120,145,180,1)" }}>部门</label>
                 <select className="form-input" style={{ appearance: "none", fontSize: 12 }} value={filterForm.unit} onChange={(e) => setFilterForm((f) => ({ ...f, unit: e.target.value }))}>
                   {["全部单位", "市局直属队", "东城分局", "西城分局", "南区分局", "郊区管理站"].map((o) => <option key={o}>{o}</option>)}
                 </select>
@@ -313,10 +350,49 @@ const DeviceArchive: React.FC = () => {
               sortField={sortField}
               sortOrder={sortOrder}
               onSort={(field, order) => { setSortField(field); setSortOrder(order); }}
-              onView={(d) => { setSelectedDevice({ name: d.name, sn: d.sn }); setShowDetail(true); }}
+              onView={(d) => { setSelectedDevice(d); setShowDetail(true); }}
               onEdit={(d) => { setEditingDevice(d); setTab("form"); }}
+              onBind={openBindModal}
             />
           </div>
+
+          {/* 绑定码弹窗：列表点击绑定后展示绑定码及二维码，扫码打开分享页可复制 */}
+          {showBindModal && listBindInfo && (
+            <div
+              style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}
+              onClick={(e) => e.target === e.currentTarget && setShowBindModal(false)}
+            >
+              <div style={{ background: "rgba(16,22,38,1)", border: "1px solid rgba(40,58,90,1)", borderRadius: 8, padding: 24, maxWidth: 520, width: "90%" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                  <span style={{ fontSize: 16, fontWeight: 600, color: "rgba(220,228,240,1)" }}>绑定码及绑定信息</span>
+                  <button type="button" onClick={() => setShowBindModal(false)} style={{ background: "none", border: "none", color: "rgba(120,145,180,1)", cursor: "pointer", padding: 4 }}>✕</button>
+                </div>
+                <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
+                  <div style={{ flex: "1 1 240px" }}>
+                    <div style={{ fontSize: 12, color: "rgba(120,145,180,1)", marginBottom: 8 }}>绑定信息</div>
+                    <div style={{ display: "grid", gap: 6, fontSize: 12 }}>
+                      <div style={{ display: "flex" }}><span style={{ width: 90, color: "rgba(120,145,180,1)" }}>绑定码</span><span style={{ color: "rgba(100,181,246,1)", fontFamily: "monospace", fontWeight: 600 }}>{listBindInfo.bindingCode}</span></div>
+                      <div style={{ display: "flex" }}><span style={{ width: 90, color: "rgba(120,145,180,1)" }}>设备名称</span><span style={{ color: "rgba(220,228,240,1)" }}>{listBindInfo.name}</span></div>
+                      <div style={{ display: "flex" }}><span style={{ width: 90, color: "rgba(120,145,180,1)" }}>设备SN</span><span style={{ color: "rgba(220,228,240,1)", fontFamily: "monospace" }}>{listBindInfo.sn}</span></div>
+                      <div style={{ display: "flex" }}><span style={{ width: 90, color: "rgba(120,145,180,1)" }}>部门</span><span style={{ color: "rgba(220,228,240,1)" }}>{listBindInfo.unit}</span></div>
+                      <div style={{ display: "flex" }}><span style={{ width: 90, color: "rgba(120,145,180,1)" }}>组织ID</span><span style={{ color: "rgba(220,228,240,1)", fontFamily: "monospace" }}>{listBindInfo.orgId}</span></div>
+                      <div style={{ display: "flex" }}><span style={{ width: 90, color: "rgba(120,145,180,1)" }}>MQTT网址</span><span style={{ color: "rgba(180,200,230,1)", fontFamily: "monospace", wordBreak: "break-all" }}>{listBindInfo.mqttUrl}</span></div>
+                      <div style={{ display: "flex" }}><span style={{ width: 90, color: "rgba(120,145,180,1)" }}>MQTT用户名</span><span style={{ color: "rgba(220,228,240,1)", fontFamily: "monospace" }}>{listBindInfo.mqttUser}</span></div>
+                      <div style={{ display: "flex" }}><span style={{ width: 90, color: "rgba(120,145,180,1)" }}>MQTT密码</span><span style={{ color: "rgba(220,228,240,1)", fontFamily: "monospace" }}>{listBindInfo.mqttPwd}</span></div>
+                    </div>
+                  </div>
+                  <div style={{ flex: "0 0 auto", textAlign: "center" }}>
+                    <div style={{ fontSize: 12, color: "rgba(120,145,180,1)", marginBottom: 6 }}>手机扫码查看绑定信息，支持复制给第三方</div>
+                    <img
+                      src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(getBindShareUrl(listBindInfo))}`}
+                      alt="绑定码二维码"
+                      style={{ width: 180, height: 180, background: "#fff", borderRadius: 6, padding: 8 }}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Pagination */}
           <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 8, marginTop: 14 }}>
@@ -382,8 +458,8 @@ const DeviceArchive: React.FC = () => {
                       </div>
                     </div>
                     <div style={{ flex: "0 0 auto", textAlign: "center" }}>
-                      <div style={{ fontSize: 12, color: "rgba(120,145,180,1)", marginBottom: 6 }}>手机扫码绑定</div>
-                      <img src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(JSON.stringify(bindingInfo))}`} alt="绑定码二维码" style={{ width: 160, height: 160, background: "#fff", borderRadius: 6, padding: 8 }} />
+                      <div style={{ fontSize: 12, color: "rgba(120,145,180,1)", marginBottom: 6 }}>手机扫码查看绑定信息，支持复制给第三方</div>
+                      <img src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(window.location.origin + "/share/bind?" + new URLSearchParams({ code: bindingInfo.bindingCode, sn: formBasic.sn || "", unit: bindingInfo.orgName, name: formBasic.name || "", orgId: bindingInfo.orgId, mqttUrl: bindingInfo.mqttUrl, mqttUser: bindingInfo.mqttUser, mqttPwd: bindingInfo.mqttPwd }).toString())}`} alt="绑定码二维码" style={{ width: 160, height: 160, background: "#fff", borderRadius: 6, padding: 8 }} />
                     </div>
                   </div>
                 </div>
@@ -394,7 +470,7 @@ const DeviceArchive: React.FC = () => {
               权属信息
             </div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 16 }}>
-              <div style={{ width: "calc(33.33% - 11px)" }}><label className="form-label">所属单位 *</label><select className="form-input" style={{ appearance: "none" }} value={formOwnership.unit} onChange={(e) => setFormOwnership((f) => ({ ...f, unit: e.target.value }))}>{["市局直属队", "东城分局", "西城分局", "南区分局", "郊区管理站"].map((o) => <option key={o}>{o}</option>)}</select></div>
+              <div style={{ width: "calc(33.33% - 11px)" }}><label className="form-label">部门 *</label><select className="form-input" style={{ appearance: "none" }} value={formOwnership.unit} onChange={(e) => setFormOwnership((f) => ({ ...f, unit: e.target.value }))}>{["市局直属队", "东城分局", "西城分局", "南区分局", "郊区管理站"].map((o) => <option key={o}>{o}</option>)}</select></div>
               <div style={{ width: "calc(33.33% - 11px)" }}><label className="form-label">责任人 *</label><input className="form-input" placeholder="输入责任人姓名" value={formOwnership.responsible} onChange={(e) => setFormOwnership((f) => ({ ...f, responsible: e.target.value }))} /></div>
               <div style={{ width: "calc(33.33% - 11px)" }}><label className="form-label">部署经度</label><input className="form-input" placeholder="如：116.3974" value={formOwnership.lng} onChange={(e) => setFormOwnership((f) => ({ ...f, lng: e.target.value }))} /></div>
               <div style={{ width: "calc(33.33% - 11px)" }}><label className="form-label">部署纬度</label><input className="form-input" placeholder="如：39.9093" value={formOwnership.lat} onChange={(e) => setFormOwnership((f) => ({ ...f, lat: e.target.value }))} /></div>
@@ -704,6 +780,8 @@ const DeviceArchive: React.FC = () => {
           onClose={() => setShowDetail(false)}
           deviceName={selectedDevice.name}
           deviceSN={selectedDevice.sn}
+          deviceUnit={selectedDevice.unit}
+          bindingCode={"BND-" + selectedDevice.id + "-" + selectedDevice.sn.replace(/-/g, "").slice(-8).toUpperCase()}
         />
       )}
     </div>

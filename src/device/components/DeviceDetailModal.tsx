@@ -9,6 +9,8 @@ interface DeviceDetailModalProps {
   deviceName?: string;
   deviceSN?: string;
   deviceUnit?: string;
+  /** 绑定码，详情页展示 */
+  bindingCode?: string;
 }
 
 const DeviceDetailModal: React.FC<DeviceDetailModalProps> = ({
@@ -17,6 +19,7 @@ const DeviceDetailModal: React.FC<DeviceDetailModalProps> = ({
   deviceName = "巡逻一号",
   deviceSN = "DJI-M300-2024001",
   deviceUnit = "市局直属队",
+  bindingCode,
 }) => {
   if (!open) return null;
 
@@ -91,7 +94,8 @@ const DeviceDetailModal: React.FC<DeviceDetailModalProps> = ({
                 ["设备类型", "多旋翼"], ["型号", "M300 RTK"],
                 ["厂商", "大疆（DJI）"], ["采购日期", "2024-01-15"],
                 ["质保期", "2026-01-15"], ["适配机型", "M300系列"],
-                ["所属单位", deviceUnit], ["责任人", "张伟"],
+                ["部门", deviceUnit], ["责任人", "张伟"],
+                ...(bindingCode ? [["绑定码", bindingCode]] as [string, string][] : []),
               ].map(([k, v]) => (
                 <div key={k} style={{ width: "50%", marginBottom: 12 }}>
                   <div style={{ fontSize: 11, color: "rgba(100,130,170,1)" }}>{k}</div>

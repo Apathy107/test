@@ -1,15 +1,17 @@
 import React from "react";
 import { Battery, Activity } from "lucide-react";
 import { useCommandCenter } from "./CommandCenterContext";
+import { AIRCRAFT_STATUS_MAP } from "@/data/command-center/deviceMapData";
 
 const DeviceTable: React.FC = () => {
   const { devices, setFlyToDeviceId } = useCommandCenter();
-  const statusConfig: Record<string, { color: string; bg: string; dot: string }> = {
-    执行任务: { color: "rgba(0, 210, 255, 1)", bg: "rgba(0,210,255,0.1)", dot: "rgba(0,210,255,1)" },
-    待命: { color: "rgba(0, 255, 180, 1)", bg: "rgba(0,255,180,0.08)", dot: "rgba(0,255,180,1)" },
-    返航: { color: "rgba(255, 185, 0, 1)", bg: "rgba(255,185,0,0.08)", dot: "rgba(255,185,0,1)" },
-    充电: { color: "rgba(150, 100, 255, 1)", bg: "rgba(150,100,255,0.08)", dot: "rgba(150,100,255,1)" },
-    异常: { color: "rgba(255, 65, 80, 1)", bg: "rgba(255,65,80,0.1)", dot: "rgba(255,65,80,1)" },
+  /** 飞机实时状态展示用样式（按状态码分组：待机/未连接/返航降落类/飞行类/其他） */
+  const getStatusStyle = (statusCode: number): { color: string; bg: string; dot: string } => {
+    if (statusCode === 0) return { color: "rgba(0, 255, 180, 1)", bg: "rgba(0,255,180,0.08)", dot: "rgba(0,255,180,1)" };
+    if (statusCode === 14) return { color: "rgba(148, 163, 184, 1)", bg: "rgba(148,163,184,0.08)", dot: "rgba(148,163,184,1)" };
+    if ([9, 10, 11, 12].includes(statusCode)) return { color: "rgba(255, 185, 0, 1)", bg: "rgba(255,185,0,0.08)", dot: "rgba(255,185,0,1)" };
+    if ([3, 4, 5, 6, 7, 17, 20, 21].includes(statusCode)) return { color: "rgba(0, 210, 255, 1)", bg: "rgba(0,210,255,0.1)", dot: "rgba(0,210,255,1)" };
+    return { color: "rgba(0, 210, 255, 1)", bg: "rgba(0,210,255,0.1)", dot: "rgba(0,210,255,1)" };
   };
 
   const handleRowClick = (deviceId: string) => {
@@ -82,7 +84,8 @@ const DeviceTable: React.FC = () => {
 
       <div style={{ overflowY: "auto", flex: 1 }}>
         {devices.map((device, idx) => {
-          const sc = statusConfig[device.taskStatus] || statusConfig["待命"];
+          const statusLabel = AIRCRAFT_STATUS_MAP[String(device.statusCode)] ?? `状态${device.statusCode}`;
+          const sc = getStatusStyle(device.statusCode);
           const battColor = getBatteryColor(device.battery);
           return (
             <div
@@ -138,7 +141,7 @@ const DeviceTable: React.FC = () => {
 
               <div style={{ width: "60px", display: "flex", alignItems: "center", gap: "3px" }}>
                 <div style={{ width: "4px", height: "4px", borderRadius: "50%", background: sc.dot, boxShadow: `0 0 4px ${sc.dot}`, flexShrink: 0 }} />
-                <span style={{ fontSize: "9px", color: sc.color, letterSpacing: "0.02em" }}>{device.taskStatus}</span>
+                <span style={{ fontSize: "9px", color: sc.color, letterSpacing: "0.02em" }} title={statusLabel}>{statusLabel}</span>
               </div>
 
               <span style={{

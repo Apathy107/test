@@ -10,13 +10,13 @@ import { FlyToModal } from "./FlyToModal";
 
 const CesiumMap = lazy(() => import("@/components/command-center/CesiumMap"));
 
-const STATUS_COLOR: Record<string, string> = {
-  执行任务: "rgba(0, 210, 255, 1)",
-  待命: "rgba(0, 255, 180, 1)",
-  返航: "rgba(255, 185, 0, 1)",
-  充电: "rgba(150, 100, 255, 1)",
-  异常: "rgba(255, 65, 80, 1)",
-};
+/** 按飞机实时状态码取颜色（与设备实时列表一致） */
+function getStatusColor(statusCode: number): string {
+  if (statusCode === 0) return "rgba(0, 255, 180, 1)";
+  if (statusCode === 14) return "rgba(148, 163, 184, 1)";
+  if ([9, 10, 11, 12].includes(statusCode)) return "rgba(255, 185, 0, 1)";
+  return "rgba(0, 210, 255, 1)";
+}
 
 /** 底图切换时强制地图刷新 */
 function MapRefreshOnBaseChange({ baseMapId }: { baseMapId: string }) {
@@ -31,7 +31,7 @@ function MapRefreshOnBaseChange({ baseMapId }: { baseMapId: string }) {
 
 /** 按设备类型生成地图图标：飞机 vs 机库 */
 function deviceIcon(d: DeviceMapItem) {
-  const color = STATUS_COLOR[d.taskStatus] ?? "rgba(0, 210, 255, 1)";
+  const color = getStatusColor(d.statusCode);
   if (d.deviceType === "dock") {
     return L.divIcon({
       className: "device-marker-icon",
@@ -60,7 +60,7 @@ function TrajectoryLayer({ devices }: { devices: DeviceMapItem[] }) {
               key={`traj-${d.id}`}
               positions={d.trajectory}
               pathOptions={{
-                color: STATUS_COLOR[d.taskStatus] ?? "rgba(0, 210, 255, 0.9)",
+                color: getStatusColor(d.statusCode),
                 weight: 2,
                 opacity: 0.9,
                 dashArray: "4,6",
@@ -88,8 +88,8 @@ function DeviceMarkersLayer({
           <Circle
             center={[d.lat, d.lng]}
             pathOptions={{
-              color: STATUS_COLOR[d.taskStatus] ?? "rgba(0, 180, 220, 0.8)",
-              fillColor: STATUS_COLOR[d.taskStatus] ?? "rgba(0, 180, 220, 0.3)",
+              color: getStatusColor(d.statusCode),
+              fillColor: getStatusColor(d.statusCode).replace("1)", "0.3)"),
               weight: 1.5,
               opacity: 0.9,
               fillOpacity: 0.15,

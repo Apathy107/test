@@ -8,7 +8,8 @@ import {
   DialogTitle,
   DialogFooter,
 } from '../components/ui/dialog';
-import { Box, Download, FolderPlus, FolderOpen, ChevronLeft, Upload, Eye, Pencil, Trash2 } from 'lucide-react';
+import { Button } from '../components/ui/button';
+import { Box, Download, FolderPlus, FolderOpen, ChevronLeft, Upload, Eye, Pencil, Trash2, Share2, Copy } from 'lucide-react';
 import JSZip from 'jszip';
 
 export interface DsmFolder {
@@ -57,6 +58,50 @@ export default function DsmResult() {
   const [previewItem, setPreviewItem] = useState<DsmItem | null>(null);
   const [editItem, setEditItem] = useState<DsmItem | null>(null);
   const [editForm, setEditForm] = useState({ name: '', status: '', time: '', size: '' });
+
+  type ShareExpiry = '1d' | '7d' | '1m' | '3m' | 'permanent' | 'custom';
+  const [shareItem, setShareItem] = useState<DsmItem | null>(null);
+  const [shareExpiry, setShareExpiry] = useState<ShareExpiry>('7d');
+  const [shareCustomExpiry, setShareCustomExpiry] = useState('');
+  const [shareLink, setShareLink] = useState<string | null>(null);
+  const [shareCopied, setShareCopied] = useState(false);
+  const openShare = (item: DsmItem) => {
+    setShareItem(item);
+    setShareLink(null);
+    setShareCopied(false);
+    setShareExpiry('7d');
+    setShareCustomExpiry('');
+  };
+  const getShareExpiryDate = (): Date | null => {
+    if (shareExpiry === 'permanent') return null;
+    if (shareExpiry === 'custom') {
+      if (!shareCustomExpiry.trim()) return null;
+      const d = new Date(shareCustomExpiry);
+      return isNaN(d.getTime()) ? null : d;
+    }
+    const now = new Date();
+    if (shareExpiry === '1d') now.setDate(now.getDate() + 1);
+    else if (shareExpiry === '7d') now.setDate(now.getDate() + 7);
+    else if (shareExpiry === '1m') now.setMonth(now.getMonth() + 1);
+    else if (shareExpiry === '3m') now.setMonth(now.getMonth() + 3);
+    return now;
+  };
+  const generateShareLink = () => {
+    if (!shareItem) return;
+    const expires = getShareExpiryDate();
+    const base = window.location.origin;
+    const params = new URLSearchParams({ type: 'dsm', id: shareItem.id, name: shareItem.name });
+    if (expires) params.set('expires', expires.toISOString());
+    setShareLink(`${base}/share/data?${params.toString()}`);
+  };
+  const copyShareLink = async () => {
+    if (!shareLink) return;
+    try {
+      await navigator.clipboard.writeText(shareLink);
+      setShareCopied(true);
+      setTimeout(() => setShareCopied(false), 2000);
+    } catch { /* ignore */ }
+  };
 
   const currentFolder = currentFolderId ? folders.find((f) => f.id === currentFolderId) : null;
   const filteredItems = useMemo(() => {
@@ -358,6 +403,9 @@ export default function DsmResult() {
                             <button type="button" onClick={() => handleDownloadOne(item)} className="text-muted-foreground hover:underline text-xs flex items-center gap-1" title="下载">
                               <Download size={12} /> 下载
                             </button>
+                            <button type="button" onClick={() => openShare(item)} className="text-primary hover:underline text-xs flex items-center gap-1" title="分享">
+                              <Share2 size={12} /> 分享
+                            </button>
                             <button type="button" onClick={(e) => openEdit(item, e)} className="text-primary hover:underline text-xs flex items-center gap-1" title="编辑">
                               <Pencil size={12} /> 编辑
                             </button>
@@ -387,6 +435,7 @@ export default function DsmResult() {
                       <div className="flex gap-2 mt-2 flex-wrap">
                         <button type="button" onClick={() => setPreviewItem(item)} className="text-primary hover:underline text-xs flex items-center gap-1"><Eye size={12} /> 预览</button>
                         <button type="button" onClick={() => handleDownloadOne(item)} className="text-muted-foreground hover:underline text-xs flex items-center gap-1"><Download size={12} /> 下载</button>
+                        <button type="button" onClick={() => openShare(item)} className="text-primary hover:underline text-xs flex items-center gap-1"><Share2 size={12} /> 分享</button>
                         <button type="button" onClick={(e) => openEdit(item, e)} className="text-primary hover:underline text-xs flex items-center gap-1"><Pencil size={12} /> 编辑</button>
                         <button type="button" onClick={(e) => handleDeleteOne(item, e)} className="text-destructive hover:underline text-xs flex items-center gap-1"><Trash2 size={12} /> 删除</button>
                       </div>
@@ -470,6 +519,48 @@ export default function DsmResult() {
             <button type="button" onClick={() => setEditItem(null)} className="px-4 py-2 text-sm rounded border border-border hover:bg-secondary">取消</button>
             <button type="button" onClick={handleEditSave} className="px-4 py-2 text-sm rounded bg-primary text-primary-foreground hover:bg-primary/90">保存</button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* 分享：有效期 1天/7天/1个月/3个月/永久/自定义（参考云端建模） */}
+      <Dialog open={!!shareItem} onOpenChange={(open) => !open && setShareItem(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Share2 size={18} /> 分享成果 - {shareItem?.name}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div>
+              <label className="text-sm font-medium text-foreground block mb-2">分享有效期</label>
+              <select className="w-full px-3 py-2 rounded border border-border bg-background text-foreground text-sm" value={shareExpiry} onChange={(e) => setShareExpiry(e.target.value as ShareExpiry)}>
+                <option value="1d">1 天</option>
+                <option value="7d">7 天</option>
+                <option value="1m">1 个月</option>
+                <option value="3m">3 个月</option>
+                <option value="permanent">永久</option>
+                <option value="custom">自定义时间</option>
+              </select>
+              {shareExpiry === 'custom' && (
+                <input type="datetime-local" className="mt-2 w-full px-3 py-2 rounded border border-border bg-background text-foreground text-sm" value={shareCustomExpiry} onChange={(e) => setShareCustomExpiry(e.target.value)} />
+              )}
+            </div>
+            {!shareLink ? (
+              <Button className="w-full gap-2" onClick={generateShareLink} disabled={shareExpiry === 'custom' && !shareCustomExpiry.trim()}>
+                生成分享链接
+              </Button>
+            ) : (
+              <div className="space-y-2">
+                <p className="text-xs text-muted-foreground">复制以下链接分享给他人：</p>
+                <div className="flex gap-2">
+                  <input readOnly className="flex-1 px-3 py-2 rounded border border-border bg-muted/50 text-foreground text-xs font-mono" value={shareLink} />
+                  <Button variant="outline" size="sm" className="gap-1 shrink-0" onClick={copyShareLink}>
+                    <Copy size={14} /> {shareCopied ? '已复制' : '复制'}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </Layout>

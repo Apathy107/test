@@ -2,6 +2,7 @@ import React, { useRef, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { X, MapPin, Video, Shield, FileText } from "lucide-react";
 import type { DeviceMapItem } from "@/data/command-center/deviceMapData";
+import { AIRCRAFT_STATUS_MAP } from "@/data/command-center/deviceMapData";
 
 interface DeviceDetailPanelProps {
   device: DeviceMapItem;
@@ -115,14 +116,16 @@ export const DeviceDetailPanel: React.FC<DeviceDetailPanelProps> = ({
           <span
             style={{
               color:
-                device.taskStatus === "执行任务"
-                  ? "rgba(0, 210, 255, 1)"
-                  : device.taskStatus === "异常"
-                    ? "rgba(255, 65, 80, 1)"
-                    : "rgba(0, 255, 180, 1)",
+                device.statusCode === 14
+                  ? "rgba(148, 163, 184, 1)"
+                  : [9, 10, 11, 12].includes(device.statusCode)
+                    ? "rgba(255, 185, 0, 1)"
+                    : [3, 4, 5, 6, 7, 17, 20, 21].includes(device.statusCode)
+                      ? "rgba(0, 210, 255, 1)"
+                      : "rgba(0, 255, 180, 1)",
             }}
           >
-            {device.taskStatus}
+            {AIRCRAFT_STATUS_MAP[String(device.statusCode)] ?? `状态${device.statusCode}`}
           </span>
         </div>
         <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
