@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { Plus, Upload, Download, Filter, Search, QrCode, RefreshCw, LayoutGrid, List, KeyRound } from "lucide-react";
 import DeviceTable, { type DeviceTableRef, type Device } from "@device/components/DeviceTable";
 import DeviceDetailModal from "@device/components/DeviceDetailModal";
@@ -11,7 +12,15 @@ type ListViewMode = "table" | "card";
 const DEVICE_TYPES = ["单兵无人机", "机场", "负载", "系留", "机器狗", "机器人", "监控设备", "配件", "其他"] as const;
 type DeviceTypeTab = "全部" | (typeof DEVICE_TYPES)[number];
 
-const INIT_FILTER: { search: string; type: string; unit: string; status: string; dateStart: string; dateEnd: string } = { search: "", type: "全部", unit: "全部单位", status: "全部", dateStart: "", dateEnd: "" };
+const INIT_FILTER: { search: string; type: string; unit: string; status: string; category: "全部" | "警用" | "政务" | "民用"; dateStart: string; dateEnd: string } = {
+  search: "",
+  type: "全部",
+  unit: "全部单位",
+  status: "全部",
+  category: "全部",
+  dateStart: "",
+  dateEnd: "",
+};
 
 const DeviceArchive: React.FC = () => {
   const [tab, setTab] = useState<TabType>("list");
@@ -25,20 +34,53 @@ const DeviceArchive: React.FC = () => {
   const [filterForm, setFilterForm] = useState(INIT_FILTER);
   const [appliedFilter, setAppliedFilter] = useState(INIT_FILTER);
   const [editingDevice, setEditingDevice] = useState<Device | null>(null);
-  const [formBasic, setFormBasic] = useState({ sn: "", name: "", type: "", model: "", vendor: "", firmware: "", purchaseDate: "", warrantyEnd: "", adaptModel: "" });
+  const [formBasic, setFormBasic] = useState({ sn: "", name: "", type: "", model: "", vendor: "", firmware: "", purchaseDate: "", warrantyEnd: "", adaptModel: "", category: "警用" as "警用" | "政务" | "民用" });
   const [formOwnership, setFormOwnership] = useState({ unit: "", responsible: "", lng: "", lat: "", address: "" });
   const [bindingInfo, setBindingInfo] = useState<{ orgId: string; orgName: string; mqttUrl: string; mqttUser: string; mqttPwd: string; bindingCode: string } | null>(null);
+  const [devicesData, setDevicesData] = useState<Device[]>(() => [
+    { id: "D001", sn: "DJI-M300-2024001", name: "巡逻一号", type: "单兵无人机", model: "M300 RTK", firmware: "v07.00.0120", status: "online", unit: "市局直属队", responsible: "张伟", purchaseDate: "2024-01-15", flightHours: 342, category: "警用" },
+    { id: "D002", sn: "DJI-M30T-2024002", name: "应急响应2号", type: "单兵无人机", model: "M30T", firmware: "v07.01.0050", status: "online", unit: "东城分局", responsible: "李明", purchaseDate: "2024-02-20", flightHours: 156, category: "警用" },
+    { id: "D003", sn: "DJI-MINI4-2024003", name: "侦查小蜂", type: "单兵无人机", model: "Mini 4 Pro", firmware: "v01.01.0200", status: "offline", unit: "西城分局", responsible: "王芳", purchaseDate: "2024-03-10", flightHours: 89, category: "警用" },
+    { id: "D004", sn: "XAG-P100-2023001", name: "农业巡检1号", type: "负载", model: "P100", firmware: "v3.2.1", status: "maintenance", unit: "郊区管理站", responsible: "陈刚", purchaseDate: "2023-06-08", flightHours: 1205, category: "警用" },
+    { id: "D005", sn: "DJI-M300-2023002", name: "高空瞭望3号", type: "单兵无人机", model: "M300 RTK", firmware: "v06.01.0120", status: "fault", unit: "南区分局", responsible: "刘洋", purchaseDate: "2023-08-22", flightHours: 768, category: "警用" },
+    { id: "D006", sn: "DJI-DOCK-2024001", name: "机库A01", type: "机场", model: "DJI Dock 2", firmware: "v10.01.0030", status: "online", unit: "市局直属队", responsible: "赵磊", purchaseDate: "2024-04-01", flightHours: 0, category: "警用" },
+    { id: "D007", sn: "DJI-DOCK-2024002", name: "机库B02", type: "机场", model: "DJI Dock 2", firmware: "v10.01.0030", status: "online", unit: "东城分局", responsible: "李明", purchaseDate: "2024-05-10", flightHours: 0, category: "警用" },
+    { id: "D008", sn: "XAG-P100-2023002", name: "农业巡检2号", type: "负载", model: "P100", firmware: "v3.2.1", status: "online", unit: "郊区管理站", responsible: "陈刚", purchaseDate: "2023-07-01", flightHours: 980, category: "警用" },
+    { id: "D009", sn: "MONITOR-001", name: "监控点1", type: "监控设备", model: "球机", firmware: "v1.0", status: "online", unit: "市局直属队", responsible: "赵磊", purchaseDate: "2024-01-01", flightHours: 0, category: "警用" },
+    { id: "D010", sn: "PART-001", name: "电池组A", type: "配件", model: "TB65", firmware: "-", status: "online", unit: "东城分局", responsible: "李明", purchaseDate: "2024-02-01", flightHours: 0, category: "警用" },
+  ]);
+  const location = useLocation() as { state?: { deviceSn?: string; deviceName?: string } };
 
   useEffect(() => {
     if (editingDevice) {
-      setFormBasic({ sn: editingDevice.sn, name: editingDevice.name, type: editingDevice.type, model: editingDevice.model, vendor: "大疆", firmware: editingDevice.firmware, purchaseDate: editingDevice.purchaseDate, warrantyEnd: "", adaptModel: "" });
+      setFormBasic({
+        sn: editingDevice.sn,
+        name: editingDevice.name,
+        type: editingDevice.type,
+        model: editingDevice.model,
+        vendor: "大疆",
+        firmware: editingDevice.firmware,
+        purchaseDate: editingDevice.purchaseDate,
+        warrantyEnd: "",
+        adaptModel: "",
+        category: (editingDevice.category as "警用" | "政务" | "民用") ?? "警用",
+      });
       setFormOwnership({ unit: editingDevice.unit, responsible: editingDevice.responsible, lng: "", lat: "", address: "" });
     } else {
-      setFormBasic({ sn: "", name: "", type: "", model: "", vendor: "", firmware: "", purchaseDate: "", warrantyEnd: "", adaptModel: "" });
+      setFormBasic({ sn: "", name: "", type: "", model: "", vendor: "", firmware: "", purchaseDate: "", warrantyEnd: "", adaptModel: "", category: "警用" });
       setFormOwnership({ unit: "", responsible: "", lng: "", lat: "", address: "" });
     }
     setBindingInfo(null);
   }, [editingDevice]);
+
+  // 从综合指挥中心“详情”跳转时，自动打开对应设备详情
+  useEffect(() => {
+    if (location.state?.deviceSn) {
+      setTab("list");
+      setSelectedDevice({ name: location.state.deviceName ?? "未知设备", sn: location.state.deviceSn });
+      setShowDetail(true);
+    }
+  }, [location.state]);
 
   const generateBindingCode = () => {
     const code = "BND-" + Math.random().toString(36).slice(2, 10).toUpperCase();
@@ -188,6 +230,19 @@ const DeviceArchive: React.FC = () => {
                   {["全部", "在线", "离线", "故障", "维护中"].map((o) => <option key={o}>{o}</option>)}
                 </select>
               </div>
+              <div style={{ flex: "0 0 140px" }}>
+                <label className="form-label" style={{ display: "block", marginBottom: 4, fontSize: 12, color: "rgba(120,145,180,1)" }}>设备类别</label>
+                <select
+                  className="form-input"
+                  style={{ appearance: "none", fontSize: 12 }}
+                  value={filterForm.category}
+                  onChange={(e) => setFilterForm((f) => ({ ...f, category: e.target.value as typeof INIT_FILTER.category }))}
+                >
+                  {["全部", "警用", "政务", "民用"].map((o) => (
+                    <option key={o}>{o}</option>
+                  ))}
+                </select>
+              </div>
               <div style={{ flex: "0 0 220px" }}>
                 <label className="form-label" style={{ display: "block", marginBottom: 4, fontSize: 12, color: "rgba(120,145,180,1)" }}>时间段</label>
                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -303,11 +358,13 @@ const DeviceArchive: React.FC = () => {
           <div className="panel-card" style={{ padding: 0, overflow: "hidden" }}>
             <DeviceTable
               ref={deviceTableRef}
+              devices={devicesData}
               viewMode={listViewMode}
               typeFilter={deviceTypeTab}
               searchKeyword={appliedFilter.search}
               unitFilter={appliedFilter.unit}
               statusFilter={appliedFilter.status}
+              categoryFilter={appliedFilter.category}
               dateStart={appliedFilter.dateStart}
               dateEnd={appliedFilter.dateEnd}
               sortField={sortField}
@@ -358,6 +415,19 @@ const DeviceArchive: React.FC = () => {
               <div style={{ width: "calc(33.33% - 11px)" }}><label className="form-label">采购日期 *</label><input className="form-input" type="date" value={formBasic.purchaseDate} onChange={(e) => setFormBasic((f) => ({ ...f, purchaseDate: e.target.value }))} /></div>
               <div style={{ width: "calc(33.33% - 11px)" }}><label className="form-label">质保截止日期</label><input className="form-input" type="date" value={formBasic.warrantyEnd} onChange={(e) => setFormBasic((f) => ({ ...f, warrantyEnd: e.target.value }))} /></div>
               <div style={{ width: "calc(33.33% - 11px)" }}><label className="form-label">适配机型</label><input className="form-input" placeholder="如：M300系列" value={formBasic.adaptModel} onChange={(e) => setFormBasic((f) => ({ ...f, adaptModel: e.target.value }))} /></div>
+              <div style={{ width: "calc(33.33% - 11px)" }}>
+                <label className="form-label">类别 *</label>
+                <select
+                  className="form-input"
+                  style={{ appearance: "none" }}
+                  value={formBasic.category}
+                  onChange={(e) => setFormBasic((f) => ({ ...f, category: e.target.value as "警用" | "政务" | "民用" }))}
+                >
+                  <option value="警用">警用</option>
+                  <option value="政务">政务</option>
+                  <option value="民用">民用</option>
+                </select>
+              </div>
             </div>
 
             <div style={{ fontSize: 13, fontWeight: 600, color: "rgba(180,200,230,1)", margin: "24px 0 16px", paddingTop: 16, borderTop: "1px solid rgba(30,50,80,1)" }}>
@@ -408,7 +478,54 @@ const DeviceArchive: React.FC = () => {
             <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 24, paddingTop: 16, borderTop: "1px solid rgba(30,50,80,1)" }}>
               <button className="btn-secondary" onClick={() => { setTab("list"); setEditingDevice(null); }}>取消</button>
               <button className="btn-secondary" onClick={() => console.log("Save draft")}>保存草稿</button>
-              <button className="btn-primary-blue" onClick={() => { console.log("Submit device", editingDevice ? "update" : "create"); setTab("list"); setEditingDevice(null); }}>提交建档</button>
+              <button
+                className="btn-primary-blue"
+                onClick={() => {
+                  if (editingDevice) {
+                    setDevicesData((prev) =>
+                      prev.map((d) =>
+                        d.id === editingDevice.id
+                          ? {
+                              ...d,
+                              sn: formBasic.sn,
+                              name: formBasic.name,
+                              type: formBasic.type,
+                              model: formBasic.model,
+                              firmware: formBasic.firmware,
+                              purchaseDate: formBasic.purchaseDate,
+                              unit: formOwnership.unit,
+                              responsible: formOwnership.responsible,
+                              category: formBasic.category,
+                            }
+                          : d
+                      )
+                    );
+                  } else {
+                    const nextIdNum = devicesData.length + 1;
+                    const newId = `D${String(nextIdNum).padStart(3, "0")}`;
+                    const today = new Date().toISOString().slice(0, 10);
+                    const newDevice: Device = {
+                      id: newId,
+                      sn: formBasic.sn || `SN-${newId}`,
+                      name: formBasic.name || "新建设备",
+                      type: formBasic.type || "单兵无人机",
+                      model: formBasic.model || "",
+                      firmware: formBasic.firmware || "-",
+                      status: "online",
+                      unit: formOwnership.unit || "市局直属队",
+                      responsible: formOwnership.responsible || "未指定",
+                      purchaseDate: formBasic.purchaseDate || today,
+                      flightHours: 0,
+                      category: formBasic.category,
+                    };
+                    setDevicesData((prev) => [newDevice, ...prev]);
+                  }
+                  setTab("list");
+                  setEditingDevice(null);
+                }}
+              >
+                提交建档
+              </button>
             </div>
           </div>
 

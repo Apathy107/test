@@ -1,5 +1,5 @@
-import React, { createContext, useCallback, useContext, useState } from "react";
-import type { DeviceMapItem } from "@/data/command-center/deviceMapData";
+import React, { createContext, useCallback, useContext, useMemo, useState } from "react";
+import type { DeviceMapItem, DeviceCategory } from "@/data/command-center/deviceMapData";
 
 export type LayoutMode = "mapMain" | "videoMain";
 
@@ -15,13 +15,19 @@ export interface DisposalMessageRecord {
 }
 
 interface CommandCenterState {
+  /** 原始设备列表 */
   devices: DeviceMapItem[];
+  /** 按类别过滤后的设备列表 */
+  filteredDevices: DeviceMapItem[];
   flyToDeviceId: string | null;
   setFlyToDeviceId: (id: string | null) => void;
   layoutMode: LayoutMode;
   setLayoutMode: (mode: LayoutMode) => void;
   selectedVideoId: string;
   setSelectedVideoId: (id: string) => void;
+  /** 设备类别筛选：全部 / 警用 / 政务 / 民用 */
+  deviceCategoryFilter: "全部" | DeviceCategory;
+  setDeviceCategoryFilter: (c: "全部" | DeviceCategory) => void;
   /** 已处置的告警 id 集合，实时告警列表不展示 */
   resolvedAlertIds: Set<number>;
   /** 标记告警已处置并同步到消息管理 */
@@ -44,6 +50,15 @@ export function CommandCenterProvider({
   const [selectedVideoId, setSelectedVideoId] = useState<string>("V1");
   const [resolvedAlertIds, setResolvedAlertIds] = useState<Set<number>>(new Set());
   const [disposalRecords, setDisposalRecords] = useState<DisposalMessageRecord[]>([]);
+  const [deviceCategoryFilter, setDeviceCategoryFilter] = useState<"全部" | DeviceCategory>("全部");
+
+  const filteredDevices = useMemo(
+    () =>
+      deviceCategoryFilter === "全部"
+        ? devices
+        : devices.filter((d) => d.category === deviceCategoryFilter),
+    [devices, deviceCategoryFilter]
+  );
 
   const addResolvedAlert = useCallback(
     (alertId: number, feedback: string, alert: { message: string; device: string; time: string; level: string }) => {
@@ -68,12 +83,15 @@ export function CommandCenterProvider({
     <CommandCenterContext.Provider
       value={{
         devices,
+        filteredDevices,
         flyToDeviceId,
         setFlyToDeviceId,
         layoutMode,
         setLayoutMode,
         selectedVideoId,
         setSelectedVideoId,
+        deviceCategoryFilter,
+        setDeviceCategoryFilter,
         resolvedAlertIds,
         addResolvedAlert,
         disposalRecords,

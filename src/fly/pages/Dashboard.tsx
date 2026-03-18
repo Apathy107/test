@@ -42,10 +42,17 @@ const MISSIONS = [
 ];
 
 // 左侧设备列表
+type DeviceCategory = '警用' | '政务' | '民用';
+const CATEGORY_STYLE: Record<DeviceCategory, { color: string }> = {
+  警用: { color: 'rgba(0, 140, 255, 1)' },
+  政务: { color: 'rgba(0, 220, 150, 1)' },
+  民用: { color: 'rgba(255, 200, 0, 1)' },
+};
+
 const DEVICES = [
-  { id: 'dock-a', name: 'DJI Dock 3 (A区)', status: '在线', desc: '园区东侧机场' },
-  { id: 'dock-b', name: 'DJI Dock 3 (B区)', status: '在线', desc: '园区西侧机场' },
-  { id: 'dock-c', name: '应急备份机场', status: '离线', desc: '城区应急备份点位' },
+  { id: 'dock-a', name: 'DJI Dock 3 (A区)', status: '在线', desc: '园区东侧机场', category: '警用' as DeviceCategory },
+  { id: 'dock-b', name: 'DJI Dock 3 (B区)', status: '在线', desc: '园区西侧机场', category: '政务' as DeviceCategory },
+  { id: 'dock-c', name: '应急备份机场', status: '离线', desc: '城区应急备份点位', category: '民用' as DeviceCategory },
 ];
 
 // AI algorithm options
@@ -90,6 +97,7 @@ export default function Dashboard() {
   const [isRecording, setIsRecording] = useState(false);
   const [selectedMissionId, setSelectedMissionId] = useState<string>(MISSIONS[0].id);
   const [selectedDeviceId, setSelectedDeviceId] = useState<string | null>(DEVICES[0]?.id ?? null);
+  const [deviceCategoryFilter, setDeviceCategoryFilter] = useState<'全部' | DeviceCategory>('全部');
   const [rightCollapsed, setRightCollapsed] = useState(false);
   const [rightTab, setRightTab] = useState<'device' | 'ai'>('device');
   const [leftCollapsed, setLeftCollapsed] = useState(false);
@@ -149,6 +157,18 @@ export default function Dashboard() {
     () => (selectedDeviceId ? DEVICES.find((d) => d.id === selectedDeviceId) ?? null : null),
     [selectedDeviceId]
   );
+
+  const filteredDevices = useMemo(() => {
+    if (deviceCategoryFilter === '全部') return DEVICES;
+    return DEVICES.filter((d) => (d.category ?? '民用') === deviceCategoryFilter);
+  }, [deviceCategoryFilter]);
+
+  useEffect(() => {
+    if (!filteredDevices.length) return;
+    if (!selectedDeviceId || !filteredDevices.some((d) => d.id === selectedDeviceId)) {
+      setSelectedDeviceId(filteredDevices[0].id);
+    }
+  }, [filteredDevices, selectedDeviceId]);
 
   const [now, setNow] = useState(() => {
     const d = new Date();
@@ -294,9 +314,41 @@ export default function Dashboard() {
               <div className="text-[10px] text-muted-foreground mb-1 flex items-center gap-1">
                 <Radio size={10} /> 设备列表
               </div>
-              {DEVICES.map((dev) => {
+              <div className="flex gap-1.5 mb-1">
+                {(['全部', '警用', '政务', '民用'] as const).map((cat) => {
+                  const active = deviceCategoryFilter === cat;
+                  const tone =
+                    cat === '警用'
+                      ? CATEGORY_STYLE.警用.color
+                      : cat === '政务'
+                        ? CATEGORY_STYLE.政务.color
+                        : cat === '民用'
+                          ? CATEGORY_STYLE.民用.color
+                          : 'rgba(148,163,184,1)';
+                  return (
+                    <button
+                      key={cat}
+                      type="button"
+                      className="px-2 py-1 rounded text-[10px] font-bold transition-all"
+                      style={{
+                        background: active ? tone.replace('1)', '0.18)') : 'rgba(15,23,42,0.5)',
+                        border: `1px solid ${active ? tone.replace('1)', '0.55)') : 'rgba(30,58,138,0.45)'}`,
+                        color: active ? tone : 'rgb(148,163,184)',
+                      }}
+                      onClick={() => setDeviceCategoryFilter(cat)}
+                      title={`筛选：${cat}`}
+                    >
+                      {cat}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {filteredDevices.map((dev) => {
                 const isActive = dev.id === selectedDeviceId;
                 const tone = dev.status === '在线' ? 'rgb(34,197,94)' : 'rgb(148,163,184)';
+                const cat = dev.category ?? ('民用' as DeviceCategory);
+                const catTone = CATEGORY_STYLE[cat]?.color ?? 'rgba(255, 200, 0, 1)';
                 return (
                   <button
                     key={dev.id}
@@ -312,9 +364,23 @@ export default function Dashboard() {
                   >
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-[11px] text-foreground truncate">{dev.name}</span>
-                      <span className="px-1.5 py-0.5 rounded-full" style={{ border: `1px solid ${tone}`, color: tone, background: 'rgba(15,23,42,0.8)' }}>
-                        {dev.status}
-                      </span>
+                      <div className="flex items-center gap-1.5">
+                        <span
+                          className="px-1.5 py-0.5 rounded"
+                          style={{
+                            color: 'rgba(226,232,240,1)',
+                            background: `linear-gradient(180deg, ${catTone.replace('1)', '0.28)')} 0%, rgba(15,23,42,0.85) 100%)`,
+                            border: '1px solid rgba(30,58,138,0.45)',
+                            boxShadow: `inset 0 0 0 1px ${catTone.replace('1)', '0.20)')}`,
+                            letterSpacing: '0.08em',
+                          }}
+                        >
+                          {cat}
+                        </span>
+                        <span className="px-1.5 py-0.5 rounded-full" style={{ border: `1px solid ${tone}`, color: tone, background: 'rgba(15,23,42,0.8)' }}>
+                          {dev.status}
+                        </span>
+                      </div>
                     </div>
                     <div className="text-[10px] text-muted-foreground truncate">{dev.desc}</div>
                   </button>

@@ -38,6 +38,7 @@ type TaskType = "常态化巡检" | "紧急任务" | "安保任务" | "专项任
 type TaskStatus = "running" | "pending" | "completed" | "paused" | "cancelled";
 type TaskPriority = "urgent" | "high" | "medium" | "low";
 type ApprovalStatus = "未审批" | "审批中" | "已通过" | "已驳回" | "已退回";
+type FlightCategory = "勤务飞行" | "政务飞行" | "民用飞行";
 
 interface BoardTask {
   id: string;
@@ -47,6 +48,7 @@ interface BoardTask {
   priority: TaskPriority;
   status: TaskStatus;
   approvalStatus: ApprovalStatus;
+  flightCategory: FlightCategory;
   device: string;
   pilot: string;
   startTime: string;
@@ -75,6 +77,7 @@ const ALL_TASKS: BoardTask[] = [
     priority: "medium",
     status: "running",
     approvalStatus: "审批中",
+    flightCategory: "勤务飞行",
     device: "高空瞭望3号",
     pilot: "张伟",
     startTime: "09:15",
@@ -98,6 +101,7 @@ const ALL_TASKS: BoardTask[] = [
     priority: "urgent",
     status: "running",
     approvalStatus: "审批中",
+    flightCategory: "勤务飞行",
     device: "侦察小蜂",
     pilot: "李明",
     startTime: "09:42",
@@ -121,6 +125,7 @@ const ALL_TASKS: BoardTask[] = [
     priority: "high",
     status: "pending",
     approvalStatus: "未审批",
+    flightCategory: "政务飞行",
     device: "巡逻一号",
     pilot: "王磊",
     startTime: "10:00",
@@ -144,6 +149,7 @@ const ALL_TASKS: BoardTask[] = [
     priority: "high",
     status: "pending",
     approvalStatus: "未审批",
+    flightCategory: "政务飞行",
     device: "农业巡检1号",
     pilot: "陈华",
     startTime: "14:00",
@@ -167,6 +173,7 @@ const ALL_TASKS: BoardTask[] = [
     priority: "low",
     status: "completed",
     approvalStatus: "已通过",
+    flightCategory: "民用飞行",
     device: "高空瞭望1号",
     pilot: "赵琳",
     startTime: "07:30",
@@ -190,6 +197,7 @@ const ALL_TASKS: BoardTask[] = [
     priority: "medium",
     status: "completed",
     approvalStatus: "已通过",
+    flightCategory: "勤务飞行",
     device: "机库A01",
     pilot: "指挥调度席",
     startTime: "16:00",
@@ -211,7 +219,7 @@ const TaskDashboard: React.FC = () => {
   const navigate = useNavigate();
 
   const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
-  const [typeTab, setTypeTab] = useState<"全部" | TaskType>("全部");
+  const [flightTab, setFlightTab] = useState<"全部" | FlightCategory>("全部");
   const [showFilter, setShowFilter] = useState(false);
   const [filter, setFilter] = useState({
     dateFrom: "",
@@ -254,6 +262,7 @@ const TaskDashboard: React.FC = () => {
           algorithms: t.algorithms || [],
           attachments: t.attachments || [],
           partners: t.partners || [],
+          flightCategory: (t as any).flightCategory || "勤务飞行",
         }));
     } catch {
       return [];
@@ -268,7 +277,7 @@ const TaskDashboard: React.FC = () => {
   const filteredTasks = useMemo(
     () =>
       allTasks.filter((t) => {
-        if (typeTab !== "全部" && t.type !== typeTab) return false;
+        if (flightTab !== "全部" && t.flightCategory !== flightTab) return false;
         if (filter.dateFrom && t.date < filter.dateFrom) return false;
         if (filter.dateTo && t.date > filter.dateTo) return false;
         if (filter.status && t.status !== filter.status) return false;
@@ -289,13 +298,14 @@ const TaskDashboard: React.FC = () => {
         }
         return true;
       }),
-    [typeTab, filter, allTasks]
+    [flightTab, filter, allTasks]
   );
 
   const tableTasks = filteredTasks.map((t) => ({
     id: t.id,
     name: t.name,
     type: t.type,
+    flightCategory: t.flightCategory,
     priority: t.priority,
     status: t.status,
     approvalStatus: t.approvalStatus,
@@ -524,20 +534,20 @@ const TaskDashboard: React.FC = () => {
                     flexWrap: "wrap",
                   }}
                 >
-                  {["全部", "常态化巡检", "紧急任务", "安保任务", "专项任务", "调度任务"].map(
+                  {["全部", "勤务飞行", "政务飞行", "民用飞行"].map(
                     (t) => (
                       <button
                         key={t}
-                        onClick={() => setTypeTab(t as any)}
+                        onClick={() => setFlightTab(t as any)}
                         style={{
                           padding: "3px 12px",
                           fontSize: "12px",
                           background:
-                            typeTab === t ? "rgba(0,120,180,0.4)" : "rgba(0,40,80,0.3)",
+                            flightTab === t ? "rgba(0,120,180,0.4)" : "rgba(0,40,80,0.3)",
                           color:
-                            typeTab === t ? "rgba(0,212,255,1)" : "rgba(120,160,210,1)",
+                            flightTab === t ? "rgba(0,212,255,1)" : "rgba(120,160,210,1)",
                           border:
-                            typeTab === t
+                            flightTab === t
                               ? "1px solid rgba(0,150,200,0.5)"
                               : "1px solid rgba(0,80,130,0.3)",
                           borderRadius: "3px",

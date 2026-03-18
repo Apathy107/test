@@ -15,6 +15,7 @@ import {
   ListTodo,
   Settings,
   Shield,
+  Radar,
   ChevronDown,
   ChevronRight,
 } from 'lucide-react';
@@ -39,6 +40,7 @@ const STATS_TREE = [
   { name: '飞手统计', path: `${BASE}/pilot-stats`, icon: User },
   { name: '设备统计', path: `${BASE}/device-stats`, icon: Cpu },
   { name: '任务统计', path: `${BASE}/task-stats`, icon: ListTodo },
+  { name: '黑飞统计', path: `${BASE}/black-fly-stats`, icon: Radar },
 ];
 
 /** 系统管理 */

@@ -51,6 +51,7 @@ export const PLATFORM_MENUS: PlatformMenuItem[] = [
   { id: 'data-dsm', name: '数字表面模型', path: '/data/dsm', parentId: 'data', sortOrder: 5 },
   { id: 'data-model3d', name: '三维模型', path: '/data/model3d', parentId: 'data', sortOrder: 6 },
   { id: 'data-business', name: '非现业务成果', path: '/data/business', parentId: 'data', sortOrder: 7 },
+  { id: 'data-black-fly', name: '黑飞统计', path: '/data/black-fly-stats', parentId: 'data', sortOrder: 8 },
   { id: 'business', name: '业务应用中心', path: '/business', parentId: '', sortOrder: 7 },
   { id: 'business-traffic', name: '交通非现执法', path: '/business/traffic', parentId: 'business', sortOrder: 1 },
   { id: 'business-urban', name: '城市综合治理', path: '/business/urban', parentId: 'business', sortOrder: 2 },

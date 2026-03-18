@@ -102,6 +102,36 @@ export const DeviceDetailPanel: React.FC<DeviceDetailPanelProps> = ({
           <span style={{ color: "rgba(200, 230, 255, 1)", fontFamily: "monospace" }}>{device.sn}</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "6px" }}>
+          <span style={{ color: "rgba(100, 150, 190, 1)", minWidth: "64px" }}>设备类别</span>
+          <span
+            style={{
+              padding: "2px 8px",
+              borderRadius: "999px",
+              fontSize: 11,
+              background:
+                device.category === "警用"
+                  ? "rgba(37, 99, 235, 0.25)"
+                  : device.category === "政务"
+                    ? "rgba(16, 185, 129, 0.22)"
+                    : "rgba(251, 191, 36, 0.18)",
+              border:
+                device.category === "警用"
+                  ? "1px solid rgba(59, 130, 246, 0.7)"
+                  : device.category === "政务"
+                    ? "1px solid rgba(34, 197, 94, 0.7)"
+                    : "1px solid rgba(250, 204, 21, 0.7)",
+              color:
+                device.category === "警用"
+                  ? "rgba(147, 197, 253, 1)"
+                  : device.category === "政务"
+                    ? "rgba(45, 212, 191, 1)"
+                    : "rgba(252, 211, 77, 1)",
+            }}
+          >
+            {device.category}
+          </span>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "6px" }}>
           <MapPin size={12} style={{ color: "rgba(0, 180, 220, 0.9)", flexShrink: 0 }} />
           <span style={{ color: "rgba(180, 220, 255, 0.9)" }}>点位</span>
           <span style={{ color: "rgba(200, 230, 255, 1)", fontFamily: "monospace", fontSize: "10px" }}>{pointStr}</span>
@@ -147,6 +177,7 @@ export const DeviceDetailPanel: React.FC<DeviceDetailPanelProps> = ({
           </button>
           <button
             type="button"
+            onClick={() => navigate("/fly")}
             style={{
               display: "flex",
               alignItems: "center",
@@ -165,7 +196,11 @@ export const DeviceDetailPanel: React.FC<DeviceDetailPanelProps> = ({
           </button>
           <button
             type="button"
-            onClick={() => navigate("/fly", { state: { deviceId: device.id, deviceSn: device.sn, deviceName: device.name } })}
+            onClick={() =>
+              navigate("/device/device-archive", {
+                state: { deviceSn: device.sn, deviceName: device.name },
+              })
+            }
             style={{
               display: "flex",
               alignItems: "center",

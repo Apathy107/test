@@ -14,6 +14,7 @@ export interface Device {
   responsible: string;
   purchaseDate: string;
   flightHours: number;
+  category?: "警用" | "政务" | "民用";
 }
 
 export interface DeviceTableRef {
@@ -30,6 +31,7 @@ interface DeviceTableProps {
   searchKeyword?: string;
   unitFilter?: string;
   statusFilter?: string;
+  categoryFilter?: "全部" | "警用" | "政务" | "民用";
   dateStart?: string;
   dateEnd?: string;
   sortField?: string;
@@ -68,6 +70,7 @@ const DeviceTable = forwardRef<DeviceTableRef, DeviceTableProps>(({
   searchKeyword = "",
   unitFilter = "",
   statusFilter = "",
+  categoryFilter = "全部",
   dateStart = "",
   dateEnd = "",
   sortField = "name",
@@ -86,6 +89,7 @@ const DeviceTable = forwardRef<DeviceTableRef, DeviceTableProps>(({
     const kw = (searchKeyword || "").trim().toLowerCase();
     if (kw) list = list.filter((d) => d.sn.toLowerCase().includes(kw) || d.name.toLowerCase().includes(kw));
     if (unitFilter && unitFilter !== "全部单位") list = list.filter((d) => d.unit === unitFilter);
+    if (categoryFilter && categoryFilter !== "全部") list = list.filter((d) => d.category === categoryFilter);
     if (statusFilter && statusFilter !== "全部") {
       const wantStatus = Object.entries(STATUS_LABELS).find(([, v]) => v === statusFilter)?.[0];
       if (wantStatus) list = list.filter((d) => d.status === wantStatus);
@@ -93,7 +97,7 @@ const DeviceTable = forwardRef<DeviceTableRef, DeviceTableProps>(({
     if (dateStart) list = list.filter((d) => d.purchaseDate >= dateStart);
     if (dateEnd) list = list.filter((d) => d.purchaseDate <= dateEnd);
     return list;
-  }, [devices, typeFilter, searchKeyword, unitFilter, statusFilter, dateStart, dateEnd]);
+  }, [devices, typeFilter, searchKeyword, unitFilter, statusFilter, categoryFilter, dateStart, dateEnd]);
 
   const sorted = useMemo(() => {
     const list = [...filtered];
@@ -170,6 +174,7 @@ const DeviceTable = forwardRef<DeviceTableRef, DeviceTableProps>(({
     { key: "sn", label: "SN序列号", width: 160 },
     { key: "name", label: "设备名称", width: 120 },
     { key: "type", label: "类型", width: 90 },
+    { key: "category", label: "类别", width: 90 },
     { key: "model", label: "型号", width: 110 },
     { key: "firmware", label: "固件版本", width: 110 },
     { key: "status", label: "状态", width: 90 },
@@ -273,6 +278,43 @@ const DeviceTable = forwardRef<DeviceTableRef, DeviceTableProps>(({
                 <td style={{ padding: "10px 12px", color: "rgba(220,228,240,1)", fontWeight: 500 }}>{device.name}</td>
                 <td style={{ padding: "10px 12px" }}>
                   <span style={{ fontSize: 11, background: "rgba(30,136,229,0.1)", color: "rgba(100,181,246,1)", padding: "2px 8px", borderRadius: 3 }}>{device.type}</span>
+                </td>
+                <td style={{ padding: "10px 12px" }}>
+                  {(() => {
+                    const category = device.category ?? "警用";
+                    const bg =
+                      category === "警用"
+                        ? "rgba(37, 99, 235, 0.25)"
+                        : category === "政务"
+                          ? "rgba(16, 185, 129, 0.22)"
+                          : "rgba(251, 191, 36, 0.18)";
+                    const border =
+                      category === "警用"
+                        ? "1px solid rgba(59, 130, 246, 0.7)"
+                        : category === "政务"
+                          ? "1px solid rgba(34, 197, 94, 0.7)"
+                          : "1px solid rgba(250, 204, 21, 0.7)";
+                    const color =
+                      category === "警用"
+                        ? "rgba(147, 197, 253, 1)"
+                        : category === "政务"
+                          ? "rgba(45, 212, 191, 1)"
+                          : "rgba(252, 211, 77, 1)";
+                    return (
+                      <span
+                        style={{
+                          fontSize: 11,
+                          padding: "2px 8px",
+                          borderRadius: 999,
+                          background: bg,
+                          border,
+                          color,
+                        }}
+                      >
+                        {category}
+                      </span>
+                    );
+                  })()}
                 </td>
                 <td style={{ padding: "10px 12px", color: "rgba(180,200,230,1)" }}>{device.model}</td>
                 <td style={{ padding: "10px 12px", fontFamily: "monospace", fontSize: 12, color: "rgba(150,170,200,1)" }}>{device.firmware}</td>

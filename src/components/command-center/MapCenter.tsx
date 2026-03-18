@@ -3,7 +3,7 @@ import { Crosshair, Layers, Navigation, ZoomIn, ZoomOut, RotateCcw, Map } from "
 import { MapContainer, TileLayer, Marker, Circle, Polyline, useMap, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import type { DeviceMapItem } from "@/data/command-center/deviceMapData";
+import type { DeviceMapItem, DeviceCategory } from "@/data/command-center/deviceMapData";
 import { useCommandCenter } from "./CommandCenterContext";
 import { DeviceDetailPanel } from "./DeviceDetailPanel";
 import { FlyToModal } from "./FlyToModal";
@@ -16,6 +16,12 @@ const STATUS_COLOR: Record<string, string> = {
   返航: "rgba(255, 185, 0, 1)",
   充电: "rgba(150, 100, 255, 1)",
   异常: "rgba(255, 65, 80, 1)",
+};
+
+const CATEGORY_STYLE: Record<DeviceCategory, { color: string; icon: "shield" | "building" | "circle" }> = {
+  警用: { color: "rgba(0, 140, 255, 1)", icon: "shield" },
+  政务: { color: "rgba(0, 220, 150, 1)", icon: "building" },
+  民用: { color: "rgba(255, 200, 0, 1)", icon: "circle" },
 };
 
 /** 底图切换时强制地图刷新 */
@@ -31,18 +37,34 @@ function MapRefreshOnBaseChange({ baseMapId }: { baseMapId: string }) {
 
 /** 按设备类型生成地图图标：飞机 vs 机库 */
 function deviceIcon(d: DeviceMapItem) {
-  const color = STATUS_COLOR[d.taskStatus] ?? "rgba(0, 210, 255, 1)";
+  const statusColor = STATUS_COLOR[d.taskStatus] ?? "rgba(0, 210, 255, 1)";
+  const categoryStyle = CATEGORY_STYLE[d.category] ?? CATEGORY_STYLE.民用;
+  const categoryColor = categoryStyle.color;
+
+  // 无人值守机场：按类别决定主体色，屋顶条带用状态色区分当前状态
   if (d.deviceType === "dock") {
     return L.divIcon({
       className: "device-marker-icon",
-      html: `<div style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;cursor:pointer;"><svg viewBox="0 0 24 24" width="24" height="24"><path fill="${color}" stroke="rgba(255,255,255,0.9)" stroke-width="1.2" d="M12 2L4 6v6l8 4 8-4V6L12 2zm0 2.5l5.5 2.75v4.5L12 14.5l-5.5-2.75v-4.5L12 4.5z"/></svg></div>`,
+      html: `<div style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;cursor:pointer;">
+        <svg viewBox="0 0 24 24" width="24" height="24">
+          <rect x="3.5" y="10.5" width="17" height="9" rx="1.5" fill="${categoryColor}" stroke="rgba(255,255,255,0.9)" stroke-width="1.2" />
+          <rect x="5" y="6" width="14" height="3.5" rx="1.5" fill="${statusColor}" />
+        </svg>
+      </div>`,
       iconSize: [24, 24],
       iconAnchor: [12, 12],
     });
   }
+
+  // 无人机：机体按类别上色，机头/圆点用状态色，既能看出类别，又能区分执行/待命/异常
   return L.divIcon({
     className: "device-marker-icon",
-    html: `<div style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;transform:rotate(${d.heading ?? 0}deg);"><svg viewBox="0 0 24 24" width="28" height="28"><path fill="${color}" stroke="rgba(255,255,255,0.9)" stroke-width="1" d="M12 2L2 12h4v8h12v-8h4L12 2z"/></svg></div>`,
+    html: `<div style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;transform:rotate(${d.heading ?? 0}deg);">
+      <svg viewBox="0 0 24 24" width="28" height="28">
+        <path d="M12 2L3 9l3 1.5L6 19h12l0-8.5L21 9 12 2z" fill="${categoryColor}" stroke="rgba(255,255,255,0.9)" stroke-width="1.2" />
+        <circle cx="12" cy="12" r="3.2" fill="${statusColor}" stroke="rgba(0,0,0,0.35)" stroke-width="0.8" />
+      </svg>
+    </div>`,
     iconSize: [28, 28],
     iconAnchor: [14, 14],
   });
@@ -88,8 +110,8 @@ function DeviceMarkersLayer({
           <Circle
             center={[d.lat, d.lng]}
             pathOptions={{
-              color: STATUS_COLOR[d.taskStatus] ?? "rgba(0, 180, 220, 0.8)",
-              fillColor: STATUS_COLOR[d.taskStatus] ?? "rgba(0, 180, 220, 0.3)",
+              color: CATEGORY_STYLE[d.category]?.color ?? STATUS_COLOR[d.taskStatus] ?? "rgba(0, 180, 220, 0.8)",
+              fillColor: CATEGORY_STYLE[d.category]?.color ?? STATUS_COLOR[d.taskStatus] ?? "rgba(0, 180, 220, 0.3)",
               weight: 1.5,
               opacity: 0.9,
               fillOpacity: 0.15,
@@ -241,12 +263,21 @@ interface MapCenterProps {
 
 const MapCenter: React.FC<MapCenterProps> = ({ compact = false }) => {
   const [baseMapId, setBaseMapId] = useState<string>("gaode");
-  const { devices, flyToDeviceId, setFlyToDeviceId, setLayoutMode } = useCommandCenter();
+  const {
+    devices,
+    filteredDevices,
+    flyToDeviceId,
+    setFlyToDeviceId,
+    setLayoutMode,
+    deviceCategoryFilter,
+    setDeviceCategoryFilter,
+  } = useCommandCenter();
   const [selectedDevice, setSelectedDevice] = useState<DeviceMapItem | null>(null);
   const [panelPosition, setPanelPosition] = useState({ x: 80, y: 80 });
   const [contextMenuPos, setContextMenuPos] = useState<{ x: number; y: number; lat: number; lng: number } | null>(null);
   const [showFlyToModal, setShowFlyToModal] = useState(false);
   const [flyToLatLng, setFlyToLatLng] = useState<{ lat: number; lng: number } | null>(null);
+  const [legendCollapsed, setLegendCollapsed] = useState(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -272,7 +303,7 @@ const MapCenter: React.FC<MapCenterProps> = ({ compact = false }) => {
 
   const tileUrl = getTileLayerUrl(baseMapId);
   const tileSubdomains = baseMapId === "gaode" ? "1234" : "abc";
-  const aircraftOptions = devices.map((d) => ({ id: d.id, name: d.name }));
+  const aircraftOptions = filteredDevices.map((d) => ({ id: d.id, name: d.name }));
 
   if (compact) {
     return (
@@ -289,7 +320,7 @@ const MapCenter: React.FC<MapCenterProps> = ({ compact = false }) => {
                 } as unknown as React.ComponentProps<typeof MapContainer>)}
               >
                 <TileLayer key={baseMapId} url={tileUrl} {...({ attribution: "", subdomains: tileSubdomains } as Record<string, unknown>)} />
-                <DeviceMarkersLayer devices={devices} onDeviceClick={handleDeviceClick} />
+                <DeviceMarkersLayer devices={filteredDevices} onDeviceClick={handleDeviceClick} />
               </MapContainer>
             </>
           ) : (
@@ -344,6 +375,33 @@ const MapCenter: React.FC<MapCenterProps> = ({ compact = false }) => {
           ))}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+          {/* 飞行类别筛选（按设备类别） */}
+          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+            <span style={{ fontSize: "10px", color: "rgba(80, 150, 200, 1)" }}>飞行类别</span>
+            <div style={{ display: "flex", gap: "4px" }}>
+              {["全部", "警用", "政务", "民用"].map((cat) => {
+                const active = deviceCategoryFilter === cat;
+                return (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => setDeviceCategoryFilter(cat as "全部" | DeviceCategory)}
+                    style={{
+                      padding: "3px 8px",
+                      fontSize: 10,
+                      borderRadius: 999,
+                      border: active ? "1px solid rgba(0,212,255,0.8)" : "1px solid rgba(30,64,175,0.6)",
+                      background: active ? "rgba(8,47,73,0.9)" : "rgba(15,23,42,0.7)",
+                      color: active ? "rgba(56,189,248,1)" : "rgba(148,163,184,1)",
+                      cursor: "pointer",
+                    }}
+                  >
+                    {cat}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
           {/* 底图切换 */}
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
             <Layers size={14} style={{ color: "rgba(0, 210, 255, 0.9)" }} />
@@ -411,8 +469,8 @@ const MapCenter: React.FC<MapCenterProps> = ({ compact = false }) => {
                 subdomains: tileSubdomains,
               } as Record<string, unknown>)}
             />
-            <FlyToDeviceEffect flyToDeviceId={flyToDeviceId} setFlyToDeviceId={setFlyToDeviceId} devices={devices} />
-            <DeviceMarkersLayer devices={devices} onDeviceClick={handleDeviceClick} />
+            <FlyToDeviceEffect flyToDeviceId={flyToDeviceId} setFlyToDeviceId={setFlyToDeviceId} devices={filteredDevices} />
+            <DeviceMarkersLayer devices={filteredDevices} onDeviceClick={handleDeviceClick} />
             <MapContextMenuLayer
               contextMenuPos={contextMenuPos}
               setContextMenuPos={(v) => {
@@ -457,7 +515,7 @@ const MapCenter: React.FC<MapCenterProps> = ({ compact = false }) => {
             </button>
           ))}
         </div>
-        <div style={{ position: "absolute", bottom: "10px", right: "10px", width: "44px", height: "44px", borderRadius: "50%", border: "1px solid rgba(0,170,220,0.35)", background: "rgba(3,10,26,0.88)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 10 }}>
+        <div style={{ position: "absolute", bottom: "10px", right: "70px", width: "44px", height: "44px", borderRadius: "50%", border: "1px solid rgba(0,170,220,0.35)", background: "rgba(3,10,26,0.88)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 10 }}>
           <Navigation size={18} style={{ color: "rgba(0, 210, 255, 1)" }} />
           <span style={{ position: "absolute", top: "3px", fontSize: "8px", color: "rgba(0,210,255,0.9)", fontWeight: 700, fontFamily: "monospace" }}>N</span>
         </div>
@@ -466,14 +524,57 @@ const MapCenter: React.FC<MapCenterProps> = ({ compact = false }) => {
           <div>E 116°23&apos;44&quot;</div>
           <div style={{ color: "rgba(0,110,160,0.8)", marginTop: "2px", fontSize: "9px" }}>三维地图引擎 · 支持天地图/高德/百度底图</div>
         </div>
-        <div style={{ position: "absolute", top: "10px", left: "10px", background: "rgba(3,10,26,0.88)", border: "1px solid rgba(0,160,200,0.22)", borderRadius: "4px", padding: "6px 10px", zIndex: 10 }}>
-          <div style={{ fontSize: "9px", color: "rgba(0,160,200,0.7)", marginBottom: "5px", letterSpacing: "0.1em" }}>图例</div>
-          {[{ color: "rgba(0,210,255,1)", label: "执行任务" }, { color: "rgba(0,255,180,1)", label: "待命" }, { color: "rgba(255,65,80,1)", label: "异常预警" }, { color: "rgba(180,100,255,1)", label: "系留设备" }].map((item) => (
-            <div key={item.label} style={{ display: "flex", alignItems: "center", gap: "5px", marginBottom: "3px" }}>
-              <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: item.color, boxShadow: `0 0 5px ${item.color}` }} />
-              <span style={{ fontSize: "10px", color: "rgba(110,180,210,1)" }}>{item.label}</span>
+        <div style={{ position: "absolute", bottom: "10px", right: "10px", background: "rgba(3,10,26,0.9)", border: "1px solid rgba(0,160,200,0.22)", borderRadius: "4px", padding: "4px 8px", zIndex: 10, minWidth: 120 }}>
+          <button
+            type="button"
+            onClick={() => setLegendCollapsed((v) => !v)}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              width: "100%",
+              background: "none",
+              border: "none",
+              padding: 0,
+              cursor: "pointer",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <span style={{ fontSize: "9px", color: "rgba(0,160,200,0.7)", letterSpacing: "0.1em" }}>图例</span>
             </div>
-          ))}
+            <span style={{ fontSize: 10, color: "rgba(148,163,184,1)" }}>{legendCollapsed ? "展开" : "收起"}</span>
+          </button>
+          {!legendCollapsed && (
+            <div style={{ marginTop: 4 }}>
+              <div style={{ marginBottom: "4px" }}>
+                <div style={{ fontSize: "9px", color: "rgba(0,160,200,0.7)", marginBottom: "2px" }}>状态</div>
+                {[
+                  { color: "rgba(0,210,255,1)", label: "执行 / 航线" },
+                  { color: "rgba(0,255,180,1)", label: "待机 / 待命" },
+                  { color: "rgba(255,185,0,1)", label: "返航 / 降落" },
+                  { color: "rgba(255,65,80,1)", label: "异常 / 强制" },
+                ].map((item) => (
+                  <div key={item.label} style={{ display: "flex", alignItems: "center", gap: "5px", marginBottom: "2px" }}>
+                    <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: item.color, boxShadow: `0 0 5px ${item.color}` }} />
+                    <span style={{ fontSize: "10px", color: "rgba(110,180,210,1)" }}>{item.label}</span>
+                  </div>
+                ))}
+              </div>
+              <div>
+                <div style={{ fontSize: "9px", color: "rgba(0,160,200,0.7)", marginBottom: "2px" }}>类别</div>
+                {[
+                  { color: CATEGORY_STYLE.警用.color, label: "警用无人机 / 机场" },
+                  { color: CATEGORY_STYLE.政务.color, label: "政务无人机 / 机场" },
+                  { color: CATEGORY_STYLE.民用.color, label: "民用无人机" },
+                ].map((item) => (
+                  <div key={item.label} style={{ display: "flex", alignItems: "center", gap: "5px", marginBottom: "2px" }}>
+                    <div style={{ width: "10px", height: "4px", borderRadius: "2px", background: item.color, boxShadow: `0 0 5px ${item.color}` }} />
+                    <span style={{ fontSize: "10px", color: "rgba(110,180,210,1)" }}>{item.label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

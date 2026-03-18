@@ -9,9 +9,16 @@ import { personnelMetrics, pilotQualificationMetrics } from "@/data/command-cent
 import { realtimeAlerts } from "@/data/command-center/realtimeAlerts";
 
 const LeftPanel: React.FC = () => {
-  const { resolvedAlertIds, addResolvedAlert } = useCommandCenter();
+  const { resolvedAlertIds, addResolvedAlert, filteredDevices, deviceCategoryFilter } = useCommandCenter();
   const notificationContext = useNotificationsOptional();
-  const alerts = realtimeAlerts.filter((a) => !resolvedAlertIds.has(a.id));
+  const alerts = realtimeAlerts
+    .filter((a) => !resolvedAlertIds.has(a.id))
+    .filter((a) => {
+      if (deviceCategoryFilter === "全部") return true;
+      const name = a.device.split("(")[0].trim();
+      const dev = filteredDevices.find((d) => d.name === name);
+      return !!dev;
+    });
 
   const handleResolve = useCallback(
     (alertId: number, feedback: string, alert: { message: string; device: string; time: string; level: string }) => {
@@ -49,9 +56,9 @@ const LeftPanel: React.FC = () => {
         pilotQualification={pilotQualificationMetrics}
       />
       <DeviceOverview
-        online={deviceOverviewStats.online}
-        offline={deviceOverviewStats.offline}
-        maintenance={deviceOverviewStats.maintenance}
+        online={filteredDevices.length}
+        offline={0}
+        maintenance={0}
         healthScore={deviceOverviewStats.healthScore}
       />
       <AlertList alerts={alerts} onResolve={handleResolve} />

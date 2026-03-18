@@ -1,9 +1,11 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import jsPDF from "jspdf";
 import FilterBar from "@personnel/components/FilterBar";
 import TechTable from "@personnel/components/TechTable";
 import PilotTableRow from "@personnel/components/PilotTableRow";
 import StatusBadge from "@personnel/components/StatusBadge";
 import { LayoutList, LayoutGrid, QrCode, X } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 type Pilot = {
   id: string;
@@ -15,17 +17,18 @@ type Pilot = {
   certStatus: "持证" | "未持证" | "已过期";
   taskStatus: "在岗" | "任务中" | "休假" | "冻结";
   certExpiry: string;
+  avatarUrl?: string;
 };
 
 const INITIAL_PILOTS: Pilot[] = [
-  { id: "P001", name: "张三", gender: "男", idCard: "110101199001011234", phone: "138****1234", unit: "东城分队", certStatus: "持证" as const, taskStatus: "在岗" as const, certExpiry: "2026-03-15" },
-  { id: "P002", name: "李四", gender: "男", idCard: "110101198505054321", phone: "139****5678", unit: "西城分队", certStatus: "持证" as const, taskStatus: "任务中" as const, certExpiry: "2025-09-20" },
-  { id: "P003", name: "王五", gender: "男", idCard: "110101199203073456", phone: "137****9012", unit: "北郊中队", certStatus: "未持证" as const, taskStatus: "在岗" as const, certExpiry: "—" },
-  { id: "P004", name: "赵六", gender: "女", idCard: "110101199507192468", phone: "136****3456", unit: "南区分队", certStatus: "已过期" as const, taskStatus: "冻结" as const, certExpiry: "2024-12-31" },
-  { id: "P005", name: "陈峰", gender: "男", idCard: "110101198812284567", phone: "135****7890", unit: "应急响应", certStatus: "持证" as const, taskStatus: "在岗" as const, certExpiry: "2027-06-10" },
-  { id: "P006", name: "吴雪", gender: "女", idCard: "110101199409155678", phone: "134****1234", unit: "西城分队", certStatus: "持证" as const, taskStatus: "休假" as const, certExpiry: "2026-11-28" },
-  { id: "P007", name: "郑宇", gender: "男", idCard: "110101199111016789", phone: "133****5678", unit: "应急响应", certStatus: "持证" as const, taskStatus: "任务中" as const, certExpiry: "2026-05-18" },
-  { id: "P008", name: "刘洋", gender: "男", idCard: "110101199307257890", phone: "132****9012", unit: "北郊中队", certStatus: "持证" as const, taskStatus: "在岗" as const, certExpiry: "2025-07-21" },
+  { id: "P001", name: "张三", gender: "男", idCard: "110101199001011234", phone: "138****1234", unit: "东城分队", certStatus: "持证" as const, taskStatus: "在岗" as const, certExpiry: "2026-03-15", avatarUrl: "" },
+  { id: "P002", name: "李四", gender: "男", idCard: "110101198505054321", phone: "139****5678", unit: "西城分队", certStatus: "持证" as const, taskStatus: "任务中" as const, certExpiry: "2025-09-20", avatarUrl: "" },
+  { id: "P003", name: "王五", gender: "男", idCard: "110101199203073456", phone: "137****9012", unit: "北郊中队", certStatus: "未持证" as const, taskStatus: "在岗" as const, certExpiry: "—", avatarUrl: "" },
+  { id: "P004", name: "赵六", gender: "女", idCard: "110101199507192468", phone: "136****3456", unit: "南区分队", certStatus: "已过期" as const, taskStatus: "冻结" as const, certExpiry: "2024-12-31", avatarUrl: "" },
+  { id: "P005", name: "陈峰", gender: "男", idCard: "110101198812284567", phone: "135****7890", unit: "应急响应", certStatus: "持证" as const, taskStatus: "在岗" as const, certExpiry: "2027-06-10", avatarUrl: "" },
+  { id: "P006", name: "吴雪", gender: "女", idCard: "110101199409155678", phone: "134****1234", unit: "西城分队", certStatus: "持证" as const, taskStatus: "休假" as const, certExpiry: "2026-11-28", avatarUrl: "" },
+  { id: "P007", name: "郑宇", gender: "男", idCard: "110101199111016789", phone: "133****5678", unit: "应急响应", certStatus: "持证" as const, taskStatus: "任务中" as const, certExpiry: "2026-05-18", avatarUrl: "" },
+  { id: "P008", name: "刘洋", gender: "男", idCard: "110101199307257890", phone: "132****9012", unit: "北郊中队", certStatus: "持证" as const, taskStatus: "在岗" as const, certExpiry: "2025-07-21", avatarUrl: "" },
 ];
 
 const columns = [
@@ -42,7 +45,10 @@ const columns = [
   { key: "action", title: "操作", width: "160px" },
 ];
 
+const PILOTS_STORAGE_KEY = "personnel.pilots.v1";
+
 const PilotArchive: React.FC = () => {
+  const navigate = useNavigate();
   const [viewMode, setViewMode] = useState<"list" | "card">("list");
   const [list, setList] = useState<Pilot[]>(INITIAL_PILOTS);
   const [showDetail, setShowDetail] = useState(false);
@@ -71,6 +77,7 @@ const PilotArchive: React.FC = () => {
     emergencyContact: "",
     education: "",
     experience: "",
+    avatarUrl: "",
   });
   const [certForm, setCertForm] = useState({
     hasCert: "no",
@@ -93,8 +100,35 @@ const PilotArchive: React.FC = () => {
   });
 
   const [detailForm, setDetailForm] = useState<Pilot | null>(null);
+  const [exportSections, setExportSections] = useState({
+    basic: true,
+    qualification: true,
+    attachments: true,
+    tasks: true,
+    training: true,
+  });
 
   console.log("PilotArchive page rendered, view mode:", viewMode);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(PILOTS_STORAGE_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as unknown;
+      if (Array.isArray(parsed)) setList(parsed as Pilot[]);
+    } catch (e) {
+      console.error("Failed to load pilots from localStorage", e);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(PILOTS_STORAGE_KEY, JSON.stringify(list));
+    } catch (e) {
+      console.error("Failed to save pilots to localStorage", e);
+    }
+  }, [list]);
 
   const handleToggleSelect = (id: string) => {
     setSelectedIds((prev) =>
@@ -154,7 +188,7 @@ const PilotArchive: React.FC = () => {
 
   const handleCreateSubmit = () => {
     const certStatus = computeCertStatus();
-    const newPilot = {
+    const newPilot: Pilot = {
       id: basicForm.id || autoPilotId(),
       name: basicForm.name || "新飞手",
       gender: basicForm.gender,
@@ -164,6 +198,7 @@ const PilotArchive: React.FC = () => {
       certStatus,
       taskStatus: "在岗" as const,
       certExpiry: certForm.validTo || "—",
+      avatarUrl: basicForm.avatarUrl || "",
     };
     setList((prev) => [newPilot, ...prev]);
     setShowCreate(false);
@@ -224,6 +259,63 @@ const PilotArchive: React.FC = () => {
       const currentIds = filteredList.map((p) => p.id);
       setSelectedIds((prev) => Array.from(new Set([...prev, ...currentIds])));
     }
+  };
+
+  const handleExportDetailPdf = () => {
+    if (!detailForm) return;
+    const doc = new jsPDF();
+    let y = 20;
+    doc.setFontSize(16);
+    doc.text(`飞手档案：${detailForm.name}`, 14, y);
+    y += 8;
+    doc.setFontSize(11);
+    if (exportSections.basic) {
+      doc.text("一、基础信息", 14, y);
+      y += 6;
+      [
+        `编号：${detailForm.id}`,
+        `姓名：${detailForm.name}`,
+        `性别：${detailForm.gender}`,
+        `身份证号：${detailForm.idCard}`,
+        `联系方式：${detailForm.phone}`,
+        `所属单位：${detailForm.unit}`,
+      ].forEach((line) => {
+        doc.text(line, 18, y);
+        y += 5;
+      });
+      y += 2;
+    }
+    if (exportSections.qualification) {
+      doc.text("二、资质信息", 14, y);
+      y += 6;
+      [
+        `持证状态：${detailForm.certStatus}`,
+        `证书到期：${detailForm.certExpiry}`,
+        `主证书：CAAC 超视距执照`,
+      ].forEach((line) => {
+        doc.text(line, 18, y);
+        y += 5;
+      });
+      y += 2;
+    }
+    if (exportSections.attachments) {
+      doc.text("三、附件材料摘要", 14, y);
+      y += 6;
+      doc.text("已存档材料：身份证、学历证明、无犯罪记录、体检报告、飞手证书等。", 18, y);
+      y += 7;
+    }
+    if (exportSections.training) {
+      doc.text("四、培训记录摘要", 14, y);
+      y += 6;
+      doc.text("示例：警用无人机基础飞行、夜航与复杂气象飞行等课程记录。", 18, y);
+      y += 7;
+    }
+    if (exportSections.tasks) {
+      doc.text("五、任务记录摘要", 14, y);
+      y += 6;
+      doc.text("示例：城市重点区域巡逻、夜间治安巡逻等任务执行情况。", 18, y);
+    }
+    doc.save(`${detailForm.name}-飞手档案.pdf`);
   };
 
   return (
@@ -420,23 +512,49 @@ const PilotArchive: React.FC = () => {
             key={p.id}
             className="tech-card rounded-lg p-4 cursor-pointer hover:opacity-90 transition-opacity"
             style={{ width: "220px" }}
-            onClick={() => { setSelectedPilot(p); setShowDetail(true); }}
+            onClick={() => navigate(`/personnel/pilot-archive/${encodeURIComponent(p.id)}`)}
           >
-            <div className="flex items-center gap-3 mb-3">
-              <div
-                className="w-10 h-10 rounded-full flex items-center justify-center text-base font-bold"
-                style={{
-                  background: "rgba(0, 80, 130, 0.5)",
-                  color: "rgba(0, 212, 255, 1)",
-                  border: "1px solid rgba(0, 150, 200, 0.4)",
-                }}
-              >
-                {p.name.charAt(0)}
+            <div className="flex items-start justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <div>
+                  <div className="text-sm font-semibold" style={{ color: "rgba(200, 220, 240, 1)" }}>{p.name}</div>
+                  <div className="text-xs" style={{ color: "rgba(80, 120, 160, 1)" }}>{p.id}</div>
+                </div>
               </div>
-              <div>
-                <div className="text-sm font-semibold" style={{ color: "rgba(200, 220, 240, 1)" }}>{p.name}</div>
-                <div className="text-xs" style={{ color: "rgba(80, 120, 160, 1)" }}>{p.id}</div>
-              </div>
+              {p.avatarUrl ? (
+                <img
+                  src={p.avatarUrl}
+                  alt={p.name}
+                  style={{
+                    width: 38,
+                    height: 48,
+                    borderRadius: 6,
+                    objectFit: "cover",
+                    border: "1px solid rgba(0,150,200,0.6)",
+                  }}
+                />
+              ) : (
+                <div
+                  style={{
+                    width: 38,
+                    height: 48,
+                    borderRadius: 6,
+                    border: "1px dashed rgba(0,150,200,0.45)",
+                    background: "rgba(15, 23, 42, 0.65)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "rgba(100, 140, 180, 1)",
+                    fontSize: 10,
+                    textAlign: "center",
+                    padding: "0 4px",
+                    lineHeight: 1.2,
+                  }}
+                  title="未上传一寸照"
+                >
+                  未上传
+                </div>
+              )}
             </div>
             <div className="flex flex-wrap gap-1.5 mb-3">
               <StatusBadge
@@ -506,18 +624,43 @@ const PilotArchive: React.FC = () => {
           >
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-3">
-                <div
-                  className="w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold"
-                  style={{ background: "rgba(0, 80, 130, 0.5)", color: "rgba(0, 212, 255, 1)", border: "1px solid rgba(0, 150, 200, 0.4)" }}
-                >
-                  {detailForm.name.charAt(0)}
-                </div>
+                {detailForm.avatarUrl ? (
+                  <img
+                    src={detailForm.avatarUrl}
+                    alt={detailForm.name}
+                    style={{
+                      width: 56,
+                      height: 56,
+                      borderRadius: 8,
+                      objectFit: "cover",
+                      border: "1px solid rgba(0,150,200,0.6)",
+                    }}
+                  />
+                ) : (
+                  <div
+                    className="w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold"
+                    style={{ background: "rgba(0, 80, 130, 0.5)", color: "rgba(0, 212, 255, 1)", border: "1px solid rgba(0, 150, 200, 0.4)" }}
+                  >
+                    {detailForm.name.charAt(0)}
+                  </div>
+                )}
                 <div>
                   <div className="text-base font-bold" style={{ color: "rgba(200, 220, 240, 1)" }}>{detailForm.name}</div>
                   <div className="text-xs" style={{ color: "rgba(80, 120, 160, 1)" }}>{detailForm.id} · {detailForm.unit}</div>
                 </div>
               </div>
               <div className="flex items-center gap-2">
+                <button
+                  className="text-xs px-3 py-1 rounded"
+                  style={{
+                    background: "rgba(0, 60, 110, 0.9)",
+                    color: "rgba(210,230,250,1)",
+                    border: "1px solid rgba(0, 150, 220, 0.6)",
+                  }}
+                  onClick={handleExportDetailPdf}
+                >
+                  导出 PDF
+                </button>
                 {detailMode === "view" && (
                   <button
                     className="text-xs px-3 py-1 rounded"
@@ -579,7 +722,32 @@ const PilotArchive: React.FC = () => {
                 </button>
               </div>
             </div>
-            <div className="highlight-line mb-5" />
+            <div className="highlight-line mb-3" />
+
+            <div className="mb-4 text-[11px] flex flex-wrap gap-3" style={{ color: "rgba(130,160,200,1)" }}>
+              <span style={{ marginRight: 8 }}>导出内容：</span>
+              {[
+                { key: "basic", label: "基础信息" },
+                { key: "qualification", label: "资质信息" },
+                { key: "attachments", label: "附件材料" },
+                { key: "training", label: "培训记录" },
+                { key: "tasks", label: "任务记录" },
+              ].map((sec) => (
+                <label key={sec.key} className="flex items-center gap-1">
+                  <input
+                    type="checkbox"
+                    checked={exportSections[sec.key as keyof typeof exportSections]}
+                    onChange={() =>
+                      setExportSections((prev) => ({
+                        ...prev,
+                        [sec.key]: !prev[sec.key as keyof typeof exportSections],
+                      }))
+                    }
+                  />
+                  {sec.label}
+                </label>
+              ))}
+            </div>
 
             {detailMode === "edit" && (
               <div
@@ -1151,8 +1319,88 @@ const PilotArchive: React.FC = () => {
             </div>
 
             {createTab === "basic" && (
-              <div className="space-y-3 text-xs" style={{ color: "rgba(160,190,220,1)" }}>
-                <div className="grid grid-cols-3 gap-3">
+              <div
+                className="space-y-3 text-xs"
+                style={{ color: "rgba(160,190,220,1)", position: "relative", paddingTop: "4px" }}
+              >
+                {/* 固定在基础信息区域右上角的一寸照 */}
+                <div
+                  style={{
+                    position: "absolute",
+                    top: 0,
+                    right: 0,
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "flex-end",
+                    gap: 4,
+                  }}
+                >
+                  <div className="form-label" style={{ marginBottom: 2 }}>
+                    人员一寸照
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const input = document.getElementById("pilot-avatar-input") as HTMLInputElement | null;
+                      input?.click();
+                    }}
+                    style={{
+                      width: 80,
+                      height: 104,
+                      borderRadius: 6,
+                      border: "1px solid rgba(0,120,190,0.7)",
+                      background: "rgba(15,23,42,0.95)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      overflow: "hidden",
+                      cursor: "pointer",
+                    }}
+                  >
+                    {basicForm.avatarUrl ? (
+                      <img
+                        src={basicForm.avatarUrl}
+                        alt="一寸照预览"
+                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                      />
+                    ) : (
+                      <span
+                        style={{
+                          fontSize: 10,
+                          color: "rgba(100,140,180,1)",
+                          textAlign: "center",
+                          padding: "0 4px",
+                        }}
+                      >
+                        点击上传一寸照
+                      </span>
+                    )}
+                  </button>
+                  <input
+                    id="pilot-avatar-input"
+                    type="file"
+                    accept=".jpg,.jpeg,.png"
+                    style={{ display: "none" }}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      const url = URL.createObjectURL(file);
+                      setBasicForm((f) => ({ ...f, avatarUrl: url }));
+                    }}
+                  />
+                  <div
+                    className="text-[10px]"
+                    style={{ color: "rgba(110,140,180,1)", marginTop: 2 }}
+                  >
+                    建议 295×413 像素，JPG/PNG。
+                  </div>
+                </div>
+
+                {/* 左侧两列基础字段，右侧留出头像的空间，通过 padding-right 控制 */}
+                <div
+                  className="grid grid-cols-2 gap-3 items-start"
+                  style={{ paddingRight: 140 }}
+                >
                   <div>
                     <div className="form-label">人员编号</div>
                     <input
@@ -1266,16 +1514,16 @@ const PilotArchive: React.FC = () => {
                       onChange={(e) => setBasicForm((f) => ({ ...f, education: e.target.value }))}
                     />
                   </div>
-                </div>
-                <div>
-                  <div className="form-label">从业经历</div>
-                  <textarea
-                    className="form-input"
-                    rows={3}
-                    placeholder="填写过往飞行单位、任务类型等经历"
-                    value={basicForm.experience}
-                    onChange={(e) => setBasicForm((f) => ({ ...f, experience: e.target.value }))}
-                  />
+                  <div className="col-span-2">
+                    <div className="form-label">从业经历</div>
+                    <textarea
+                      className="form-input"
+                      rows={3}
+                      placeholder="填写过往飞行单位、任务类型等经历"
+                      value={basicForm.experience}
+                      onChange={(e) => setBasicForm((f) => ({ ...f, experience: e.target.value }))}
+                    />
+                  </div>
                 </div>
               </div>
             )}

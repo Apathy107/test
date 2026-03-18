@@ -3,8 +3,32 @@ import { Battery, Activity } from "lucide-react";
 import { useCommandCenter } from "./CommandCenterContext";
 
 const DeviceTable: React.FC = () => {
-  const { devices, setFlyToDeviceId } = useCommandCenter();
+  const { filteredDevices, setFlyToDeviceId } = useCommandCenter();
   const statusConfig: Record<string, { color: string; bg: string; dot: string }> = {
+    待机: { color: "rgba(148,163,184,1)", bg: "rgba(148,163,184,0.12)", dot: "rgba(148,163,184,1)" },
+    起飞准备: { color: "rgba(56,189,248,1)", bg: "rgba(56,189,248,0.12)", dot: "rgba(56,189,248,1)" },
+    起飞准备完毕: { color: "rgba(34,197,94,1)", bg: "rgba(34,197,94,0.12)", dot: "rgba(34,197,94,1)" },
+    手动飞行: { color: "rgba(59,130,246,1)", bg: "rgba(59,130,246,0.12)", dot: "rgba(59,130,246,1)" },
+    自动起飞: { color: "rgba(56,189,248,1)", bg: "rgba(56,189,248,0.12)", dot: "rgba(56,189,248,1)" },
+    航线飞行: { color: "rgba(0, 210, 255, 1)", bg: "rgba(0,210,255,0.1)", dot: "rgba(0,210,255,1)" },
+    全景拍照: { color: "rgba(244,114,182,1)", bg: "rgba(244,114,182,0.12)", dot: "rgba(244,114,182,1)" },
+    智能跟随: { color: "rgba(45,212,191,1)", bg: "rgba(45,212,191,0.12)", dot: "rgba(45,212,191,1)" },
+    "ADS-B 躲避": { color: "rgba(251,146,60,1)", bg: "rgba(251,146,60,0.12)", dot: "rgba(251,146,60,1)" },
+    自动返航: { color: "rgba(250,204,21,1)", bg: "rgba(250,204,21,0.12)", dot: "rgba(250,204,21,1)" },
+    自动降落: { color: "rgba(96,165,250,1)", bg: "rgba(96,165,250,0.12)", dot: "rgba(96,165,250,1)" },
+    强制降落: { color: "rgba(248,113,113,1)", bg: "rgba(248,113,113,0.16)", dot: "rgba(248,113,113,1)" },
+    三桨叶降落: { color: "rgba(248,113,113,1)", bg: "rgba(248,113,113,0.16)", dot: "rgba(248,113,113,1)" },
+    升级中: { color: "rgba(250,204,21,1)", bg: "rgba(250,204,21,0.14)", dot: "rgba(250,204,21,1)" },
+    未连接: { color: "rgba(148,163,184,1)", bg: "rgba(15,23,42,0.9)", dot: "rgba(30,64,175,1)" },
+    APAS: { color: "rgba(45,212,191,1)", bg: "rgba(45,212,191,0.12)", dot: "rgba(45,212,191,1)" },
+    虚拟摇杆状态: { color: "rgba(94,234,212,1)", bg: "rgba(94,234,212,0.12)", dot: "rgba(94,234,212,1)" },
+    指令飞行: { color: "rgba(59,130,246,1)", bg: "rgba(59,130,246,0.12)", dot: "rgba(59,130,246,1)" },
+    空中RTK收敛模式: { color: "rgba(34,197,94,1)", bg: "rgba(34,197,94,0.12)", dot: "rgba(34,197,94,1)" },
+    "空中 RTK 收敛模式": { color: "rgba(34,197,94,1)", bg: "rgba(34,197,94,0.12)", dot: "rgba(34,197,94,1)" },
+    机场选址中: { color: "rgba(96,165,250,1)", bg: "rgba(96,165,250,0.12)", dot: "rgba(96,165,250,1)" },
+    POI环绕: { color: "rgba(244,114,182,1)", bg: "rgba(244,114,182,0.12)", dot: "rgba(244,114,182,1)" },
+    进离场航线飞行过程中: { color: "rgba(0, 210, 255, 1)", bg: "rgba(0,210,255,0.1)", dot: "rgba(0,210,255,1)" },
+    // 兼容旧状态
     执行任务: { color: "rgba(0, 210, 255, 1)", bg: "rgba(0,210,255,0.1)", dot: "rgba(0,210,255,1)" },
     待命: { color: "rgba(0, 255, 180, 1)", bg: "rgba(0,255,180,0.08)", dot: "rgba(0,255,180,1)" },
     返航: { color: "rgba(255, 185, 0, 1)", bg: "rgba(255,185,0,0.08)", dot: "rgba(255,185,0,1)" },
@@ -56,7 +80,7 @@ const DeviceTable: React.FC = () => {
           <span className="fui-title">设备实时列表</span>
         </div>
         <span style={{ fontSize: "10px", color: "rgba(60, 130, 170, 1)", fontFamily: "monospace" }}>
-          {devices.length} 台设备
+          {filteredDevices.length} 台设备
         </span>
       </div>
 
@@ -81,7 +105,7 @@ const DeviceTable: React.FC = () => {
       </div>
 
       <div style={{ overflowY: "auto", flex: 1 }}>
-        {devices.map((device, idx) => {
+        {filteredDevices.map((device, idx) => {
           const sc = statusConfig[device.taskStatus] || statusConfig["待命"];
           const battColor = getBatteryColor(device.battery);
           return (

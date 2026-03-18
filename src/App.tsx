@@ -16,6 +16,7 @@ import Scrapping from "./device/pages/Scrapping";
 import PersonnelLayout from "./personnel/PersonnelLayout";
 import PersonnelDashboard from "./personnel/pages/Dashboard";
 import PilotArchive from "./personnel/pages/PilotArchive";
+import PilotDetail from "./personnel/pages/PilotDetail";
 import QualificationMonitor from "./personnel/pages/QualificationMonitor";
 import QualificationUpgrade from "./personnel/pages/QualificationUpgrade";
 import PilotTransfer from "./personnel/pages/PilotTransfer";
@@ -41,6 +42,7 @@ import DataBusinessResult from "./data/pages/BusinessResult";
 import DataPilotStats from "./data/pages/PilotStats";
 import DataDeviceStats from "./data/pages/DeviceStats";
 import DataTaskStats from "./data/pages/TaskStats";
+import DataBlackFlyStats from "./data/pages/BlackFlyStats";
 import DataPermission from "./data/pages/DataPermission";
 import SystemDashboard from "./system/pages/Dashboard";
 import SystemOrganization from "./system/pages/Organization";
@@ -107,6 +109,7 @@ const App = () => {
             <Route path="/personnel" element={<PersonnelLayout />}>
               <Route index element={<PersonnelDashboard />} />
               <Route path="pilot-archive" element={<PilotArchive />} />
+              <Route path="pilot-archive/:pilotId" element={<PilotDetail />} />
               <Route path="qualification-monitor" element={<QualificationMonitor />} />
               <Route path="qualification-upgrade" element={<QualificationUpgrade />} />
               <Route path="pilot-transfer" element={<PilotTransfer />} />
@@ -134,6 +137,7 @@ const App = () => {
             <Route path="/data/pilot-stats" element={<DataPilotStats />} />
             <Route path="/data/device-stats" element={<DataDeviceStats />} />
             <Route path="/data/task-stats" element={<DataTaskStats />} />
+            <Route path="/data/black-fly-stats" element={<DataBlackFlyStats />} />
             <Route path="/data/permission" element={<DataPermission />} />
             <Route path="/system" element={<SystemDashboard />} />
             <Route path="/system/organization" element={<SystemOrganization />} />

@@ -5,21 +5,39 @@ import ModulePageLayout from "@/components/ModulePageLayout";
 const COLOR = "rgb(60, 210, 255)";
 const GLOW = "rgba(60, 210, 255, 0.4)";
 
+type UavCategory = "警用" | "政务" | "民用";
+
+const CATEGORY_COLOR: Record<UavCategory, string> = {
+  // Keep consistent with Command Center legend colors
+  警用: "rgba(0, 140, 255, 1)",
+  政务: "rgba(0, 220, 150, 1)",
+  民用: "rgba(255, 200, 0, 1)",
+};
+
 /**
  * FlightControl - 飞行控制中心 page
  */
 const FlightControl: React.FC = () => {
   console.log("FlightControl page rendered");
   const [selectedUav, setSelectedUav] = useState("UAV-003");
+  const [categoryFilter, setCategoryFilter] = useState<"全部" | UavCategory>("全部");
+  const [nameFilter, setNameFilter] = useState("");
 
   const uavList = [
-    { id: "UAV-003", status: "飞行中", battery: 78, signal: 95, alt: 120, speed: 15 },
-    { id: "UAV-007", status: "返航中", battery: 22, signal: 88, alt: 80, speed: 8 },
-    { id: "UAV-009", status: "飞行中", battery: 55, signal: 92, alt: 200, speed: 22 },
-    { id: "UAV-015", status: "待命", battery: 100, signal: 100, alt: 0, speed: 0 },
+    { id: "UAV-003", status: "飞行中", battery: 78, signal: 95, alt: 120, speed: 15, category: "警用" as UavCategory },
+    { id: "UAV-007", status: "返航中", battery: 22, signal: 88, alt: 80, speed: 8, category: "政务" as UavCategory },
+    { id: "UAV-009", status: "飞行中", battery: 55, signal: 92, alt: 200, speed: 22, category: "民用" as UavCategory },
+    { id: "UAV-015", status: "待命", battery: 100, signal: 100, alt: 0, speed: 0, category: "警用" as UavCategory },
   ];
 
-  const selected = uavList.find((u) => u.id === selectedUav) || uavList[0];
+  const filteredUavList = uavList.filter((u) => {
+    const matchCategory = categoryFilter === "全部" || u.category === categoryFilter;
+    const kw = nameFilter.trim();
+    const matchName = !kw || u.id.includes(kw);
+    return matchCategory && matchName;
+  });
+
+  const selected = filteredUavList.find((u) => u.id === selectedUav) || filteredUavList[0] || uavList[0];
 
   const gaugeItems = [
     { label: "飞行高度", value: selected.alt, unit: "m", max: 500, icon: Navigation },
@@ -48,9 +66,43 @@ const FlightControl: React.FC = () => {
             padding: "16px",
           }}
         >
-          <div style={{ fontSize: "12px", color: "rgba(0, 180, 220, 0.55)", fontFamily: "monospace", letterSpacing: "0.2em", marginBottom: "14px" }}>UAV LIST</div>
+          <div style={{ fontSize: "12px", color: "rgba(0, 180, 220, 0.55)", fontFamily: "monospace", letterSpacing: "0.2em", marginBottom: "10px" }}>UAV LIST</div>
+          <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+            <select
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value as "全部" | UavCategory)}
+              style={{
+                flex: 1,
+                fontSize: 11,
+                background: "rgba(15,23,42,0.9)",
+                color: "rgba(148,163,184,1)",
+                borderRadius: 4,
+                border: "1px solid rgba(51,65,85,1)",
+                padding: "4px 6px",
+              }}
+            >
+              <option value="全部">全部类别</option>
+              <option value="警用">警用</option>
+              <option value="政务">政务</option>
+              <option value="民用">民用</option>
+            </select>
+            <input
+              placeholder="按设备编号搜索"
+              value={nameFilter}
+              onChange={(e) => setNameFilter(e.target.value)}
+              style={{
+                flex: 1,
+                fontSize: 11,
+                background: "rgba(15,23,42,0.9)",
+                color: "rgba(226,232,240,1)",
+                borderRadius: 4,
+                border: "1px solid rgba(51,65,85,1)",
+                padding: "4px 6px",
+              }}
+            />
+          </div>
           <div className="flex flex-col gap-3">
-            {uavList.map((uav) => (
+            {filteredUavList.map((uav) => (
               <div
                 key={uav.id}
                 onClick={() => setSelectedUav(uav.id)}
@@ -66,7 +118,21 @@ const FlightControl: React.FC = () => {
               >
                 <div className="flex items-center justify-between mb-1">
                   <span style={{ fontSize: "13px", color: "rgb(200, 235, 255)", fontFamily: "monospace", fontWeight: "700" }}>{uav.id}</span>
-                  <span style={{ fontSize: "10px", color: uav.status === "飞行中" ? "rgb(0, 220, 120)" : uav.status === "返航中" ? "rgb(255, 180, 0)" : COLOR }}>{uav.status}</span>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <span style={{ fontSize: "10px", color: uav.status === "飞行中" ? "rgb(0, 220, 120)" : uav.status === "返航中" ? "rgb(255, 180, 0)" : COLOR }}>{uav.status}</span>
+                    <span
+                      style={{
+                        fontSize: 10,
+                        padding: "0 6px",
+                        borderRadius: 999,
+                        border: `1px solid ${CATEGORY_COLOR[uav.category]}`,
+                        color: CATEGORY_COLOR[uav.category],
+                        background: CATEGORY_COLOR[uav.category].replace("1)", "0.12)"),
+                      }}
+                    >
+                      类别 {uav.category}
+                    </span>
+                  </div>
                 </div>
                 <div style={{ display: "flex", gap: "10px" }}>
                   <span style={{ fontSize: "10px", color: "rgba(0, 160, 200, 0.6)", fontFamily: "monospace" }}>🔋{uav.battery}%</span>

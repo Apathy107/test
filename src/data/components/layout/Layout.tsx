@@ -15,6 +15,7 @@ const dataTitleMap: Record<string, string> = {
   '/data/pilot-stats': '飞手统计',
   '/data/device-stats': '设备统计',
   '/data/task-stats': '任务统计',
+  '/data/black-fly-stats': '黑飞统计',
   '/data/permission': '数据权限',
 };
 

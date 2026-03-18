@@ -51,6 +51,7 @@ const TaskCreate: React.FC = () => {
   const [taskType, setTaskType] = useState("inspection"); // inspection | emergency | security | special | dispatch | city_normal | city_special | city_emergency
   const [taskName, setTaskName] = useState("");
   const [taskNo, setTaskNo] = useState("RW-XJ-2025-0043");
+  const [flightCategory, setFlightCategory] = useState<"勤务飞行" | "政务飞行" | "民用飞行">("勤务飞行");
   
   // Specific feature: Multiple periodic times
   const [periodicTimes, setPeriodicTimes] = useState([{ freq: "每天", start: "09:00", end: "10:00" }]);
@@ -142,6 +143,7 @@ const TaskCreate: React.FC = () => {
           algorithms: [],
           attachments: [],
           partners: collabUnits,
+          flightCategory,
         };
         const next = Array.isArray(list) ? [...list, stored] : [stored];
         window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
@@ -400,6 +402,18 @@ const TaskCreate: React.FC = () => {
                         </button>
                       ))}
                     </div>
+                  </div>
+                  <div>
+                    <label style={labelStyle}>飞行类别 {requiredDot}</label>
+                    <select
+                      style={inputStyle}
+                      value={flightCategory}
+                      onChange={(e) => setFlightCategory(e.target.value as typeof flightCategory)}
+                    >
+                      <option value="勤务飞行">勤务飞行</option>
+                      <option value="政务飞行">政务飞行</option>
+                      <option value="民用飞行">民用飞行</option>
+                    </select>
                   </div>
                   <div>
                     <label style={labelStyle}>执行时间 {requiredDot}</label>
